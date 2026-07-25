@@ -1,0 +1,105 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   SCRMBL - Standalone HTML Quick Start                      ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+🚀 TO USE YOUR APP:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ➊  Find the file:  SCRMBL.html
+
+  ➋  Double-click it
+
+  ➌  Wait 5-10 seconds (loading screen with spinner)
+
+  ➍  Your SCRMBL hiking marketplace appears!
+
+
+⚠️  IF YOU SEE A WHITE SCREEN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • Wait longer (up to 15 seconds)
+  • Press F12 → Check "Console" tab for errors
+  • Check internet connection (needs CDN libraries)
+  • Try different browser (Chrome works best)
+  • Open test-babel.html to diagnose
+
+
+🔧 TO EDIT YOUR APP:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Option 1: Edit SCRMBL.html directly
+    • Open in text editor (VS Code, Notepad++)
+    • Find line 72: <script type="text/babel">
+    • Make changes to JSX code
+    • Save and refresh browser
+
+  Option 2: Edit source and rebuild
+    • Edit: scrmbl-browser.jsx
+    • Run: bash build-standalone.sh
+    • New SCRMBL.html created
+
+
+📚 DOCUMENTATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  README-STANDALONE.txt     Full user guide + troubleshooting
+  SOLUTION-SUMMARY.txt      Technical details + how it works
+  QUICK-START.txt          This file!
+
+
+🧪 TESTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  test-babel.html          Diagnostic tool
+                           Tests if your browser can handle
+                           Babel JSX compilation
+
+
+📦 WHAT YOU GOT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Single HTML file (564 KB)
+  ✓ No Node.js needed
+  ✓ No build tools needed
+  ✓ No installation needed
+  ✓ Works offline (after first load)
+  ✓ Full React app with 2913 lines of code
+  ✓ All features working
+  ✓ Ready to share with anyone
+
+
+🌐 REQUIREMENTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Modern web browser
+  ✓ Internet connection (first load only)
+  ✓ JavaScript enabled
+
+
+💡 TIPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • First load takes 5-10 seconds (Babel compiles JSX)
+  • Works in Chrome, Firefox, Edge, Safari
+  • Can share file with anyone - they just double-click!
+  • For production, use proper build tools (Vite, etc.)
+
+
+❓ HAVING ISSUES?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Open test-babel.html first (diagnostic)
+  2. Read README-STANDALONE.txt (full guide)
+  3. Check browser console (F12 → Console)
+  4. Try different browser
+  5. Check internet connection
+
+
+═══════════════════════════════════════════════════════════════
+
+  That's it! Double-click SCRMBL.html and enjoy! 🏔️
+
+═══════════════════════════════════════════════════════════════

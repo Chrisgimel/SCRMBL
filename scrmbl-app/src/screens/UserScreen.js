@@ -1,0 +1,114 @@
+import React, { useState } from "react";
+import { ChevronLeft, Award, Package } from "lucide-react";
+import Avatar from "../components/ui/Avatar";
+import Empty from "../components/ui/Empty";
+import StatCol from "../components/ui/StatCol";
+import UnderlineTabs from "../components/ui/UnderlineTabs";
+import HikePoster from "../components/hike/HikePoster";
+import ReviewCard from "../components/hike/ReviewCard";
+import RareBadge from "../components/ui/RareBadge";
+
+import { COMMUNITY_GEAR, COMMUNITY_LOGS, COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
+import { fmtStats, hikeById, isRareHike } from "../utils/helpers";
+
+function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isLiked, getLikeCount }) {
+  const u = USER_BY_HANDLE[handle];
+  const [tab, setTab] = useState("Top Hikes");
+  if (!u) return <Empty title="Hiker not found" />;
+  const following = state.following.includes(handle);
+  const logs = COMMUNITY_LOGS.filter((l) => l.handle === handle).sort((a, b) => b.date.localeCompare(a.date));
+  const top = COMMUNITY_TOP[handle] || [];
+  const gear = COMMUNITY_GEAR?.[handle] || [];
+  const vert = logs.reduce((a, l) => a + (hikeById(state, l.hikeId)?.gain || 0), 0);
+
+  return (
+    <div className="screen" style={{ background: THEME.canvas }}>
+      <div style={{ padding: "18px 18px 0", display: "flex", justifyContent: "space-between" }}>
+        <button className="round-btn" onClick={onBack} aria-label="Back"><ChevronLeft size={20} color={THEME.grayLight} /></button>
+      </div>
+      <div style={{ padding: "10px 18px 0" }}>
+        <Avatar hue={u.hue} size={78} handle={handle} />
+        <div style={{ fontFamily: "var(--display)", fontSize: 30, fontWeight: 700, color: THEME.grayLight, marginTop: 12 }}>{u.name}</div>
+        <div style={{ color: THEME.textDim, fontSize: 14 }}>@{u.handle} · {u.city}</div>
+        <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 8, lineHeight: 1.45 }}>{u.bio}</div>
+
+        <div style={{ display: "flex", gap: 22, margin: "16px 0 4px" }}>
+          <StatCol n={logs.length} label="Entries" />
+          <StatCol n={top.length} label="On the shelf" />
+          <StatCol n={`${(vert / 1000).toFixed(1)}k′`} label="Climbed" />
+        </div>
+
+        <button className={following ? "outline-btn" : "primary-btn"} style={{ marginTop: 14 }}
+          onClick={() => setState((s) => ({
+            ...s, following: following ? s.following.filter((x) => x !== handle) : [...s.following, handle],
+          }))}>
+          {following ? "Following" : "Follow"}
+        </button>
+
+        <div style={{ marginTop: 18 }}>
+          <UnderlineTabs tabs={["Top Hikes", "Reviews", "Gear"]} active={tab} onChange={setTab} />
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {tab === "Top Hikes" && (top.length === 0
+          ? <Empty icon={Award} title="No shelf yet" subtitle={`${u.name} hasn't ranked anything.`} />
+          : top.map((id, i) => {
+            const h = hikeById(state, id);
+            return (
+              <button key={id} className="rank-card" onClick={() => openHike(id)} style={{ border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                <div className="rank-num">{i + 1}</div>
+                <div style={{ width: 58, height: 58, borderRadius: 10, overflow: "hidden", flexShrink: 0, position: "relative" }}>
+                  <HikePoster hike={h} />
+                  {isRareHike(state, id) && <RareBadge />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: THEME.grayLight, fontWeight: 700, fontSize: 14.5 }}>{h?.name}</div>
+                  <div style={{ color: THEME.gray, fontSize: 12 }}>{fmtStats(h)}</div>
+                </div>
+              </button>
+            );
+          }))}
+        {tab === "Reviews" && logs.map((l) => (
+          <ReviewCard key={l.id} state={state} setState={setState} entry={{ ...l, mine: false }}
+            openUser={() => {}} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} hikeName={hikeById(state, l.hikeId)?.name} hike={hikeById(state, l.hikeId)} />
+        ))}
+        {tab === "Gear" && (
+          gear.length === 0
+            ? <Empty icon={Package} title="No gear yet" subtitle={`${u.name} hasn't added any gear.`} />
+            : <div>
+                {Object.entries(
+                  gear.reduce((acc, g) => {
+                    const slotLabel = SLOT[g.slot]?.label || g.slot;
+                    if (!acc[slotLabel]) acc[slotLabel] = [];
+                    acc[slotLabel].push(g);
+                    return acc;
+                  }, {})
+                ).map(([slotLabel, items]) => (
+                  <div key={slotLabel} style={{ marginBottom: 16 }}>
+                    <div style={{ color: THEME.mintLight, fontSize: 11.5, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8 }}>{slotLabel}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {items.map((g) => (
+                        <div key={g.id} className="rank-card" style={{ alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: THEME.grayLight, fontWeight: 700, fontSize: 14 }}>{g.name}</div>
+                            <div style={{ color: THEME.gray, fontSize: 12 }}>
+                              {g.brand}{g.price ? ` · $${g.price}` : ""}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default UserScreen;
+
+
+
