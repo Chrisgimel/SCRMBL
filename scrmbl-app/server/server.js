@@ -3,6 +3,7 @@ const cors = require('cors');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const { initializeDatabase, runQuery, getQuery, allQuery } = require('./database');
+const { matchTrail } = require('./trailMatcher');
 
 const app = express();
 const PORT = 3001;
@@ -315,6 +316,48 @@ app.get('/api/users/:handle/gear', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user gear:', error);
     res.status(500).json({ error: 'Failed to fetch user gear' });
+  }
+});
+
+// ============================================
+// TRAIL ROUTES
+// ============================================
+
+// Get a trail's route geometry (cached; read-only for now, no auth —
+// public reference data, same as the like-count endpoint above)
+app.get('/api/trails/:trail_id/geometry', async (req, res) => {
+  try {
+    const { trail_id } = req.params;
+    const { name, lat, long, mi } = req.query;
+
+    const cached = await getQuery(
+      'SELECT points, confidence, source FROM trail_geometry WHERE trail_id = ?',
+      [trail_id]
+    );
+
+    if (cached) {
+      return res.json({
+        points: JSON.parse(cached.points),
+        confidence: cached.confidence,
+        source: cached.source,
+      });
+    }
+
+    // Cache miss: try to auto-match it against OpenStreetMap. Only persist
+    // the result if the matcher reached a real verdict — an unreachable
+    // Overpass isn't proof this trail has no data, so that case isn't
+    // cached and just gets retried on the next view.
+    const result = await matchTrail({ name, lat, long, mi });
+    if (result.cacheable) {
+      await runQuery(
+        'INSERT OR IGNORE INTO trail_geometry (trail_id, points, confidence, source) VALUES (?, ?, ?, ?)',
+        [trail_id, JSON.stringify(result.points), result.confidence, result.source]
+      );
+    }
+    res.json({ points: result.points, confidence: result.confidence, source: result.source });
+  } catch (error) {
+    console.error('Error fetching trail geometry:', error);
+    res.status(500).json({ error: 'Failed to fetch trail geometry' });
   }
 });
 

@@ -65,6 +65,27 @@ function initializeDatabase() {
         console.log('Likes table ready');
       }
     });
+
+    // Trail geometry table — cached real-world route data per trail, fetched
+    // from OpenStreetMap on first view and reused for every user after that.
+    // points is JSON-encoded [[lat,lon],...]; '[]' means a confirmed no-match
+    // (negative cache, so a bad trail isn't re-queried on every view).
+    db.run(`
+      CREATE TABLE IF NOT EXISTS trail_geometry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trail_id TEXT NOT NULL UNIQUE,
+        points TEXT NOT NULL,
+        confidence TEXT NOT NULL,
+        source TEXT,
+        fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating trail_geometry table:', err);
+      } else {
+        console.log('Trail geometry table ready');
+      }
+    });
   });
 }
 

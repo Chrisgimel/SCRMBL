@@ -114,3 +114,17 @@ export async function getLikeCount(reviewId) {
 export async function getUserGear(handle) {
   return apiCall(`/users/${handle}/gear`);
 }
+
+// ============================================
+// TRAIL API
+// ============================================
+
+export async function getTrailGeometry(trailId, { name, lat, long, mi } = {}) {
+  const params = new URLSearchParams();
+  if (name != null) params.set('name', name);
+  if (lat != null) params.set('lat', lat);
+  if (long != null) params.set('long', long);
+  if (mi != null) params.set('mi', mi);
+  const qs = params.toString();
+  return apiCall(`/trails/${trailId}/geometry${qs ? `?${qs}` : ''}`);
+}

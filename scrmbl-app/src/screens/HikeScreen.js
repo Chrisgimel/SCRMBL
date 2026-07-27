@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ChevronLeft, Bookmark, MapPin, Sparkles, Camera, Award, ChevronRight } from "lucide-react";
 import Empty from "../components/ui/Empty";
 import HikePoster from "../components/hike/HikePoster";
+import TrailMap from "../components/hike/TrailMap";
 import ElevationSketch from "../components/hike/ElevationSketch";
 import ReviewCard from "../components/hike/ReviewCard";
 import UnderlineTabs from "../components/ui/UnderlineTabs";
@@ -129,7 +130,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
         )}
 
         <div style={{ marginTop: 18 }}>
-          <UnderlineTabs tabs={["Reviews", "Photos", "Shelves"]} active={tab} onChange={setTab} />
+          <UnderlineTabs tabs={["Reviews", "Photos", "Shelves", "Map"]} active={tab} onChange={setTab} />
         </div>
       </div>
 
@@ -189,6 +190,8 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
                 })}
               </div>
         )}
+
+        {tab === "Map" && <TrailMap hike={h} />}
       </div>
     </div>
   );

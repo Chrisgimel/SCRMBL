@@ -1,0 +1,230 @@
+================================================================================
+FEATURE: Trail Mapping with GPS Tracks, Photo Locations, and POIs
+Status: NOT YET STARTED (on hold until app is stable on real phone)
+================================================================================
+
+OVERVIEW
+--------
+Allow users to view hikes on a map with their recorded GPS track, see photo
+locations pinned along the route, and drop POI/tip markers at specific points.
+
+Three interlinked capabilities:
+1. Trail geometry + map rendering
+2. Photo geotagging (from EXIF)
+3. POI (Points of Interest) — user tips/warnings at specific locations
+
+PREREQUISITES BEFORE STARTING
+------------------------------
+✓ Capacitor build verified on real phone (iOS + Android)
+✓ Current features (karma, spotlight, logging, gear, marketplace) tested live
+✓ No critical bugs in existing stack
+✓ Decision made: Are hikes user-created or hand-curated? Local data or backend?
+  (This shapes how tracks and POIs are stored/synced)
+
+
+PHASE 1: Map Rendering (foundation)
+------------------------------------
+Task: Get a map on screen with basic tile rendering
+
+Library choice:
+- Leaflet (lightweight, proven, huge plugin ecosystem)
+- MapLibre GL (modern, better performance on mobile, vector tiles)
+→ Recommendation: Start with Leaflet. Simpler setup, easier to add POI pins later.
+  Swap to MapLibre if performance becomes an issue on older phones.
+
+Data source for initial trail geometry:
+- OpenStreetMap via Overpass API (free, no auth, good trail coverage)
+- User-recorded GPS tracks (crowdsourced, fits "prove you did it" identity)
+- USGS/NFS GIS downloads (official, free, regional coverage)
+→ Recommendation: Seed with OSM for day-1 content (so map isn't empty), then
+  transition to user tracks as primary source. OSM is the fallback.
+
+Implementation:
+- Install leaflet (npm install leaflet)
+- Create MapView component rendering hike track as polyline
+- Fetch trail geometry from OSM Overpass API or use stored GPX/GeoJSON
+- Test zoom/pan performance on real device
+- Cost: ~6-8 hours
+
+
+PHASE 2: GPS Track Recording
+-----------------------------
+Task: Record user's GPS location during/after a hike
+
+Capacitor plugin needed: @capacitor/geolocation
+
+Key decisions:
+- Record during hike (live, uses GPS, battery impact) vs. after (upload existing track)?
+  → Start with upload existing track (less risky), add live recording later
+- Accuracy: 10m vs. 1m? Bigger file size vs. noisier track
+  → Start with ~5-10m accuracy to balance file size + accuracy
+- Format: GPX (industry standard, XML, bigger) or GeoJSON (lighter, JSON)?
+  → Use GeoJSON, smaller over network
+
+Implementation:
+- Add "Upload GPS Track" option to hike logging flow
+- Accept .gpx files (convert to GeoJSON on upload)
+- Store track in local SQLite (Capacitor Storage) or backend DB
+- Render uploaded track as polyline on map
+- Cost: ~4-6 hours
+
+
+PHASE 3: Photo Geotagging
+-------------------------
+Task: Extract GPS from photo EXIF, plot photos on map as markers
+
+Capacitor plugin needed: @capacitor/camera (already preserves EXIF if available)
+
+Implementation:
+- On photo upload in logging flow, extract EXIF GPS data (if present)
+  (Use exif-js library or native Capacitor parsing)
+- Store photo lat/lng with photo metadata
+- Render photos as map markers on the trail
+- Tap marker → show photo thumbnail/fullscreen
+- Cost: ~3-4 hours
+
+
+PHASE 4: POI / Tips Markers
+---------------------------
+Task: Let users drop location-based tips on a hike
+
+Data model:
+{
+  hikeId,
+  lat,
+  lng,
+  type: "warning" | "tip" | "landmark",
+  title,
+  note,
+  author,
+  timestamp
+}
+
+User flow:
+Option A (simpler): After hike, tap hike on map → tap a point on the track →
+  "Add tip at this location" dialog
+Option B (harder): During hike, current GPS location → "Add tip here" button
+
+→ Recommendation: Start with Option A (tap-on-track). Easier to test,
+  lower GPS dependency.
+
+Rendering:
+- Different marker icon per type (warning = red pin, tip = blue marker, etc.)
+- Tap marker → show note preview
+- Swipe/expand → full note + author
+
+Storage:
+- If local-only: SQLite on device
+- If backend: POST POI to server, track in hike document
+
+Cost: ~5-6 hours (Option A), +3-4 hours (add live GPS variant)
+
+
+PHASING TIMELINE
+----------------
+Session N:   Verify Capacitor build on real phone ← YOU ARE HERE
+Session N+1: Phase 1 (map rendering, OSM trail geometry)
+Session N+2: Phase 2 (GPS track upload)
+Session N+3: Phase 3 (photo EXIF geotagging)
+Session N+4: Phase 4 (POI/tips markers)
+
+Total: ~18-28 hours depending on backend decisions
+
+
+OPEN DECISIONS (don't move forward without clarity)
+----------------------------------------------------
+1. DATA STORAGE
+   - Local only (SQLite on device) — faster, works offline, user owns data
+   - Cloud backend (server DB) — multi-device sync, shareable hikes, discovery
+   - Hybrid (local cache + optional sync)?
+   → Decision impacts: track storage, POI sharing, multi-user features
+
+2. HIKE DEFINITION
+   - User-created (each hike logged is custom) — no predefined trail list
+   - Hand-curated (admin-seeded list like current SEED_HIKES) — consistent data
+   - Hybrid (seed popular trails from OSM, users can log variants)?
+   → Affects: which hikes can have shared tracks/POIs
+
+3. PHOTO/TRACK FILE SIZES
+   - Track: 100 points = ~5KB GeoJSON, 1000 points = ~50KB
+   - Photo: 4MB typical, EXIF adds <1KB
+   → Decision: do you compress photos? Do users upload or just local view?
+
+4. GPS ACCURACY VS. BATTERY
+   - 5s interval, 5m accuracy = ~720 points/hour, minimal battery hit
+   - 1s interval, 1m accuracy = ~3600 points/hour, noticeable battery drain
+   → Start conservative (5-10s, 5-10m), let users opt in to precision
+
+
+DEPENDENCIES TO ADD (when ready)
+---------------------------------
+npm install:
+  leaflet
+  exif-js (for photo EXIF parsing)
+  @capacitor/geolocation
+  (map library already covers tile rendering)
+
+One-time setup:
+  - Add location permissions to capacitor.config.json (iOS Info.plist, Android Manifest)
+  - Test on real device with location access granted
+
+
+RED FLAGS / GOTCHAS
+-------------------
+- Leaflet on iOS can be laggy with 1000+ points — simplify tracks before rendering
+- Geolocation requires "Always Allow" permission — users often deny it
+  → Start with "While Using" (temporary, during hike)
+- EXIF GPS is optional — many photos won't have it (indoors, old phones)
+  → Graceful fallback: let user manually pin photo to map
+- Capacitor's Geolocation API doesn't auto-stop when app backgrounds
+  → Must manually stop recording when user minimizes app
+- File uploads (photos + tracks) can exceed free tier limits if backend is chosen
+  → Budget for storage or implement compression/pruning
+
+
+TESTING CHECKLIST (before shipping each phase)
+-----------------------------------------------
+Phase 1:
+  ✓ Map renders, tiles load
+  ✓ Zoom/pan smooth on low-end phone (2-3 year old device)
+  ✓ Trail polyline renders in <1 second
+
+Phase 2:
+  ✓ Upload .gpx file without crashes
+  ✓ Track stored and reloaded correctly
+  ✓ GPS track renders with uploaded track
+
+Phase 3:
+  ✓ Photo EXIF extracted correctly
+  ✓ Photo markers appear on map at correct location
+  ✓ Fallback if photo has no EXIF (don't crash)
+
+Phase 4:
+  ✓ Can tap on map and create POI
+  ✓ POI persists and reloads
+  ✓ Different marker types render differently
+  ✓ Can read other users' POIs (if shared)
+
+
+NICE-TO-HAVES (defer to later)
+-------------------------------
+- Elevation profile (show gradient along the route)
+- Real-time hike tracking (background GPS during hike)
+- Heatmap (show popular routes / most-hiked sections)
+- Offline map tiles (cache map area for airplane mode)
+- Trail difficulty overlay (color-code sections by steepness)
+
+
+RELATED / BACKGROUND
+--------------------
+This feature request came from desire to:
+1. Show hike location and route visually
+2. Pin photo locations along the route
+3. Let community add tips/warnings at specific points
+
+Fits SCRMBL's identity: "Letterboxd for hiking" + proof of accomplishment
+(GPS track is stronger proof than a photo alone).
+
+Related to Phase 1 goals? Not a blocker. This is Phase 2+ scope.
+Current blocker: stabilize Capacitor build on real phone first.
+================================================================================
