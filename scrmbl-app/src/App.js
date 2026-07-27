@@ -6,6 +6,7 @@ import * as api from "./utils/api";
 import Logo from "./components/ui/Logo";
 
 import Toast from "./components/ui/Toast";
+import LevelUpBanner from "./components/ui/LevelUpBanner";
 
 import FeedScreen from "./screens/feed/FeedScreen";
 
@@ -54,8 +55,10 @@ export default function App() {
   const [reviewDetail, setReviewDetail] = useState(null);
   const [photoViewer, setPhotoViewer] = useState(null);
   const [toastMsg, setToastState] = useState(null);
+  const [levelUp, setLevelUp] = useState(null);
   const saveTimer = useRef(null);
   const toastTimer = useRef(null);
+  const levelUpTimer = useRef(null);
   const scroller = useRef(null);
 
   // Backend-synced bucklist
@@ -75,6 +78,16 @@ export default function App() {
     clearTimeout(toastTimer.current);
     setToastState({ text, bad });
     toastTimer.current = setTimeout(() => setToastState(null), 2600);
+  }, []);
+
+  /* One trigger, one piece of state — whatever action awards karma just
+     calls this with the LEVELS entry from karma.js. Redesigning the
+     notification later (confetti, sound, a full-screen moment) only means
+     changing LevelUpBanner; this call stays the same. */
+  const announceLevelUp = useCallback((levelInfo) => {
+    clearTimeout(levelUpTimer.current);
+    setLevelUp(levelInfo);
+    levelUpTimer.current = setTimeout(() => setLevelUp(null), 3400);
   }, []);
 
   useEffect(() => { loadPersisted().then((s) => { setState(s); setLoaded(true); }); }, []);
@@ -238,7 +251,7 @@ export default function App() {
         )}
         {adding && (
           <AddHikeSheet state={state} setState={setState} presetHikeId={adding.hikeId} editLogId={adding.logId}
-            toast={toast} onLogged={(r) => setLogged(r)} onClose={() => setAdding(null)} />
+            toast={toast} onLogged={(r) => { setLogged(r); if (r.leveledUpTo) announceLevelUp(r.leveledUpTo); }} onClose={() => setAdding(null)} />
         )}
         {logged && (
           <LoggedSheet state={state} result={logged} openHike={openHike} onClose={() => setLogged(null)} />
@@ -256,6 +269,7 @@ export default function App() {
           <PhotoViewerModal photo={photoViewer} onClose={() => setPhotoViewer(null)} />
         )}
         <Toast toast={toastMsg} />
+        <LevelUpBanner levelUp={levelUp} onDismiss={() => setLevelUp(null)} />
       </div>
     </div>
   );

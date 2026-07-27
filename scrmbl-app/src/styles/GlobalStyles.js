@@ -87,6 +87,9 @@ function GlobalStyles() {
       .bubble.theirs { align-self: flex-start; background: ${THEME.surfaceHi}; color: ${THEME.grayLight}; border-bottom-left-radius: 5px; }
       .confirm { position: absolute; inset: 0; background: rgba(12,21,26,0.88); border-radius: 22px 22px 0 0; display: flex; flex-direction: column; justify-content: center; padding: 24px; }
       .toast { position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 40; display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 11px 14px; color: ${THEME.grayLight}; font-size: 13px; font-weight: 600; box-shadow: 0 10px 26px rgba(0,0,0,0.45); animation: toastIn 0.2s ease; }
+      .level-up-banner { position: absolute; left: 16px; right: 16px; top: 60px; z-index: 60; display: flex; align-items: center; gap: 12px; background: ${THEME.slateDeep}; border: 1px solid ${THEME.mintLight}; border-radius: 16px; padding: 12px 14px; box-shadow: 0 14px 34px rgba(0,0,0,0.5); animation: levelUpIn 0.4s cubic-bezier(0.23, 1, 0.320, 1); cursor: pointer; }
+      @keyframes levelUpIn { 0% { transform: translateY(-16px) scale(0.94); opacity: 0; } 60% { transform: translateY(2px) scale(1.02); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .level-up-banner { animation: none; } }
       .sheet-backdrop { position: absolute; inset: 0; background: rgba(12,21,26,0.55); display: flex; align-items: flex-end; z-index: 20; }
       .sheet { width: 100%; max-height: 88%; background: ${THEME.surface}; border-radius: 22px 22px 0 0; border-top: 1px solid ${THEME.hairline}; display: flex; flex-direction: column; animation: slideUp 0.22s ease; position: relative; }
       .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 10px; }

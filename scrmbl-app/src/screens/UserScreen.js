@@ -7,9 +7,11 @@ import UnderlineTabs from "../components/ui/UnderlineTabs";
 import HikePoster from "../components/hike/HikePoster";
 import ReviewCard from "../components/hike/ReviewCard";
 import RareBadge from "../components/ui/RareBadge";
+import KarmaBadge from "../components/ui/KarmaBadge";
 
 import { COMMUNITY_GEAR, COMMUNITY_LOGS, COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
 import { fmtStats, hikeById, isRareHike } from "../utils/helpers";
+import { spotlightHike, totalKarmaForLogs } from "../utils/karma";
 
 function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isLiked, getLikeCount }) {
   const u = USER_BY_HANDLE[handle];
@@ -20,6 +22,7 @@ function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isL
   const top = COMMUNITY_TOP[handle] || [];
   const gear = COMMUNITY_GEAR?.[handle] || [];
   const vert = logs.reduce((a, l) => a + (hikeById(state, l.hikeId)?.gain || 0), 0);
+  const karma = totalKarmaForLogs(logs, state, spotlightHike(state)?.id);
 
   return (
     <div className="screen" style={{ background: THEME.canvas }}>
@@ -31,6 +34,8 @@ function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isL
         <div style={{ fontFamily: "var(--display)", fontSize: 30, fontWeight: 700, color: THEME.grayLight, marginTop: 12 }}>{u.name}</div>
         <div style={{ color: THEME.textDim, fontSize: 14 }}>@{u.handle} · {u.city}</div>
         <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 8, lineHeight: 1.45 }}>{u.bio}</div>
+
+        <KarmaBadge karma={karma} />
 
         <div style={{ display: "flex", gap: 22, margin: "16px 0 4px" }}>
           <StatCol n={logs.length} label="Entries" />

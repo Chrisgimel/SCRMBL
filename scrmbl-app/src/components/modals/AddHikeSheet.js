@@ -9,6 +9,7 @@ import RareChip from "../ui/RareChip";
 import PhotoPicker from "../PhotoPicker";
 import { THEME, EFFORTS, TOP_CAP } from "../../constants";
 import { uid, allHikes, hikeById, fmtStats, ratingOut, isRareHike } from "../../utils/helpers";
+import { spotlightHike, totalKarmaForLogs, karmaLevel } from "../../utils/karma";
 
 /* Many entries per hike, photos, the gear you wore, and real stats
    on custom routes. (plan 1.2 / 1.4 / 3.2 / 3.3) */
@@ -53,6 +54,18 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
       id: editing?.id || uid("l"), hikeId: picked.id, date, rating, effort,
       review: review.trim(), liked, photos, gear, time,
     };
+    /* Detect a level-up by comparing before/after against the logs this
+       save is about to produce — cheap since it's the exact same derived
+       math used everywhere else, just run twice. Only matters for a new
+       entry; editing can't retroactively "level you up" in a way worth
+       announcing. */
+    let leveledUpTo = null;
+    if (!editing) {
+      const spotlightId = spotlightHike(state)?.id;
+      const before = karmaLevel(totalKarmaForLogs(state.logs, state, spotlightId));
+      const after = karmaLevel(totalKarmaForLogs([...state.logs, entry], state, spotlightId));
+      if (after.level > before.level) leveledUpTo = after;
+    }
     setState((s) => {
       const logs = editing ? s.logs.map((l) => (l.id === entry.id ? entry : l)) : [...s.logs, entry];
       let top = s.top.filter((id) => id !== picked.id);
@@ -61,7 +74,7 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
     });
     onClose();
     if (editing) toast("Entry updated");
-    else onLogged({ hike: picked, wasOnBucket, firstEver, rating, entry });
+    else onLogged({ hike: picked, wasOnBucket, firstEver, rating, entry, leveledUpTo });
   };
 
   if (creating) {

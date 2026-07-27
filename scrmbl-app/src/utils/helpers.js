@@ -120,10 +120,10 @@ export function hasAltitudeBadge(hike) {
    ================================================================ */
 
 export const ACHIEVEMENTS = [
-  { id: "hikes-10", icon: "/achievements/10-hikes.png", title: "10 Hikes", check: (s) => s.logs.length >= 10, progress: (s) => s.logs.length },
-  { id: "hikes-50", icon: "/achievements/50-hikes.png", title: "50 Hikes", check: (s) => s.logs.length >= 50, progress: (s) => s.logs.length },
-  { id: "hikes-100", icon: "/achievements/13.png", title: "100 Hikes", check: (s) => s.logs.length >= 100, progress: (s) => s.logs.length },
-  { id: "miles-20", icon: "/achievements/20-miles.png", title: "20 Miles", check: (s, all) => {
+  { id: "hikes-10", icon: "/achievements/10-hikes.png", title: "10 Hikes", karmaValue: 100, check: (s) => s.logs.length >= 10, progress: (s) => s.logs.length },
+  { id: "hikes-50", icon: "/achievements/50-hikes.png", title: "50 Hikes", karmaValue: 400, check: (s) => s.logs.length >= 50, progress: (s) => s.logs.length },
+  { id: "hikes-100", icon: "/achievements/13.png", title: "100 Hikes", karmaValue: 800, check: (s) => s.logs.length >= 100, progress: (s) => s.logs.length },
+  { id: "miles-20", icon: "/achievements/20-miles.png", title: "20 Miles", karmaValue: 80, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const miles = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0);
     return miles >= 20;
@@ -131,7 +131,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0));
   }},
-  { id: "miles-100", icon: "/achievements/100-miles.png", title: "100 Miles", check: (s, all) => {
+  { id: "miles-100", icon: "/achievements/100-miles.png", title: "100 Miles", karmaValue: 300, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const miles = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0);
     return miles >= 100;
@@ -139,7 +139,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0));
   }},
-  { id: "miles-1000", icon: "/achievements/1000-miles.png", title: "1000 Miles", check: (s, all) => {
+  { id: "miles-1000", icon: "/achievements/1000-miles.png", title: "1000 Miles", karmaValue: 1500, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const miles = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0);
     return miles >= 1000;
@@ -147,7 +147,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.mi || 0), 0));
   }},
-  { id: "elevation-5000", icon: "/achievements/5000-ft-gained.png", title: "5000 Ft", check: (s, all) => {
+  { id: "elevation-5000", icon: "/achievements/5000-ft-gained.png", title: "5000 Ft", karmaValue: 100, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const gain = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0);
     return gain >= 5000;
@@ -155,7 +155,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0));
   }},
-  { id: "elevation-50000", icon: "/achievements/50000-ft-gained.png", title: "50000 Ft", check: (s, all) => {
+  { id: "elevation-50000", icon: "/achievements/50000-ft-gained.png", title: "50000 Ft", karmaValue: 500, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const gain = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0);
     return gain >= 50000;
@@ -163,7 +163,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0));
   }},
-  { id: "elevation-100k", icon: "/achievements/100000-ft-gained.png", title: "100000 Ft", check: (s, all) => {
+  { id: "elevation-100k", icon: "/achievements/100000-ft-gained.png", title: "100000 Ft", karmaValue: 1000, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const gain = s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0);
     return gain >= 100000;
@@ -171,7 +171,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return Math.floor(s.logs.reduce((a, l) => a + (hikes[l.hikeId]?.gain || 0), 0));
   }},
-  { id: "seasonal-climber", icon: "/achievements/seasonal-climber.png", title: "All Seasons", check: (s, all) => {
+  { id: "seasonal-climber", icon: "/achievements/seasonal-climber.png", title: "All Seasons", karmaValue: 250, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const seasons = new Set(s.logs.map((l) => {
       const date = new Date(l.date);
@@ -180,7 +180,7 @@ export const ACHIEVEMENTS = [
     }));
     return seasons.size === 4;
   } },
-  { id: "14ers-53", icon: "/achievements/all-53-14ers.png", title: "All 53 14ers", check: (s, all) => {
+  { id: "14ers-53", icon: "/achievements/all-53-14ers.png", title: "All 53 14ers", karmaValue: 2500, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const count14ers = new Set(s.logs.filter((l) => (hikes[l.hikeId]?.summit || 0) >= 14000).map((l) => l.hikeId)).size;
     return count14ers >= 53;
@@ -188,7 +188,7 @@ export const ACHIEVEMENTS = [
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     return new Set(s.logs.filter((l) => (hikes[l.hikeId]?.summit || 0) >= 14000).map((l) => l.hikeId)).size;
   }},
-  { id: "14ers-58-technical", icon: "/achievements/the-technical-58-14ers.png", title: "58 Technical 14ers", check: (s, all) => {
+  { id: "14ers-58-technical", icon: "/achievements/the-technical-58-14ers.png", title: "58 Technical 14ers", karmaValue: 3000, check: (s, all) => {
     const hikes = Object.fromEntries(all.map((h) => [h.id, h]));
     const count14ers = new Set(s.logs.filter((l) => (hikes[l.hikeId]?.summit || 0) >= 14000 && (hikes[l.hikeId]?.klass || 0) >= 2).map((l) => l.hikeId)).size;
     return count14ers >= 58;

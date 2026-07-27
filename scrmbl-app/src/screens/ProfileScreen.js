@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Settings, Sparkles, Award, ArrowUp, ArrowDown, X, Bookmark, Users, UserCheck, ChevronDown } from "lucide-react";
+import { Settings, Sparkles, Award, ArrowUp, ArrowDown, X, Bookmark, Users, UserCheck } from "lucide-react";
 import Avatar from "../components/ui/Avatar";
 import StatCol from "../components/ui/StatCol";
 import UnderlineTabs from "../components/ui/UnderlineTabs";
@@ -8,17 +8,26 @@ import HikePoster from "../components/hike/HikePoster";
 import Rating from "../components/ui/Rating";
 import ReviewCard from "../components/hike/ReviewCard";
 import RareBadge from "../components/ui/RareBadge";
+import KarmaBadge from "../components/ui/KarmaBadge";
 import { UI } from "../assets/images";
 import { THEME, TOP_CAP, USER_BY_HANDLE } from "../constants";
 import { achievements, allHikes, fmtStats, hikeById, isRareHike, userAchievements } from "../utils/helpers";
+import { spotlightHike, totalKarma } from "../utils/karma";
 
 function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser }) {
   const [tab, setTab] = useState("Top Hikes");
-  const [showAchievements, setShowAchievements] = useState(true);
-  const [detailAchievement, setDetailAchievement] = useState(null);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersTab, setFollowersTab] = useState("Followers");
   const stats = useMemo(() => achievements(state), [state]);
+  const karma = useMemo(() => totalKarma(state, spotlightHike(state)?.id), [state]);
+  /* Unlocked achievements rendered as the same tiny pill as the live stat
+     badges (2 14ers, 1 rare trail, ...) — one unified "badges" row instead
+     of a separate trophy-case section. Keeps their PNG artwork, just styled
+     to match. */
+  const achievementBadges = useMemo(() => userAchievements(state, allHikes(state))
+    .filter((a) => a.unlocked)
+    .map((a) => ({ id: a.id, icon: a.icon, label: a.title, note: `+${a.karmaValue || 0} karma` })), [state]);
+  const allBadges = [...stats.badges, ...achievementBadges];
 
   const move = (hikeId, dir) => setState((s) => {
     const i = s.top.indexOf(hikeId);
@@ -64,6 +73,8 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
         <div style={{ color: THEME.textDim, fontWeight: 500, marginTop: 2, fontSize: 15 }}>{state.user.city}</div>
         {state.user.bio && <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 8, lineHeight: 1.45 }}>{state.user.bio}</div>}
 
+        <KarmaBadge karma={karma} />
+
         <div style={{ display: "flex", alignItems: "center", margin: "20px 0 4px", gap: 22 }}>
           <StatCol n={state.followers.length} label="Followers" onClick={() => { setShowFollowersModal(true); setFollowersTab("Followers"); }} />
           <div style={{ width: 1, height: 30, background: THEME.hairline }} />
@@ -77,10 +88,13 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
             <div><div className="stat-n">{stats.vert >= 1000 ? `${(stats.vert / 1000).toFixed(1)}k` : stats.vert}</div><div className="stat-l">feet up</div></div>
             <div><div className="stat-n">{Math.round(stats.miles)}</div><div className="stat-l">miles</div></div>
           </div>
-          {stats.badges.length > 0 ? (
+          {allBadges.length > 0 ? (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              {stats.badges.map((b) => (
-                <span key={b.id} className="badge" title={b.note}><b.icon size={11} /> {b.label}</span>
+              {allBadges.map((b) => (
+                <span key={b.id} className="badge" title={b.note}>
+                  {typeof b.icon === "string" ? <img src={b.icon} alt="" style={{ width: 12, height: 12, borderRadius: 2 }} /> : <b.icon size={11} />}
+                  {" "}{b.label}
+                </span>
               ))}
             </div>
           ) : (
@@ -97,65 +111,6 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
               <span style={{ flex: 1, textAlign: "left", color: THEME.grayLight, fontWeight: 600, fontSize: 16 }}>Try SCRMBL Premium</span>
               <span style={{ color: THEME.textDim, fontSize: 20 }}>›</span>
             </button>
-          </div>
-        )}
-
-        {userAchievements && (
-          <div style={{ marginTop: 24, marginBottom: 12 }}>
-            <button onClick={() => setShowAchievements(!showAchievements)}
-              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
-              <div style={{ color: THEME.mintLight, fontSize: 11.5, letterSpacing: 1.2, textTransform: "uppercase", flex: 1, textAlign: "left" }}>Achievements</div>
-              <ChevronDown size={16} color={THEME.textDim} style={{ transform: showAchievements ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.35s cubic-bezier(0.23, 1, 0.320, 1)" }} />
-            </button>
-            <div style={{
-              display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))", gap: 8, marginTop: 12,
-              maxHeight: showAchievements ? "500px" : "0px",
-              opacity: showAchievements ? 1 : 0,
-              overflow: "hidden",
-              transition: "max-height 0.35s cubic-bezier(0.23, 1, 0.320, 1), opacity 0.35s cubic-bezier(0.23, 1, 0.320, 1)"
-            }}>
-              {userAchievements(state, allHikes(state)).map((ach) => {
-                const progressMax = ach.title.match(/\d+/)?.[0];
-                return (
-                  <button key={ach.id} onClick={() => setDetailAchievement(ach)}
-                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "center", opacity: ach.unlocked ? 1 : 0.4 }}>
-                    <img src={ach.icon} alt="" style={{ width: 60, height: 60, marginBottom: 4 }} />
-                    <div style={{ color: THEME.gray, fontSize: 10, lineHeight: 1.2 }}>{ach.title}</div>
-                    {ach.progressValue != null && (
-                      <div style={{ color: ach.unlocked ? THEME.mintLight : THEME.textDim, fontSize: 9, marginTop: 2, fontWeight: 600 }}>
-                        {Math.floor(ach.progressValue)}/{progressMax || "?"}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {detailAchievement && (
-          <div style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-            padding: 20
-          }} onClick={() => setDetailAchievement(null)}>
-            <div style={{
-              background: THEME.surface, borderRadius: 16, padding: 24, maxWidth: 300, textAlign: "center", border: `1px solid ${THEME.hairline}`
-            }} onClick={(e) => e.stopPropagation()}>
-              <img src={detailAchievement.icon} alt="" style={{ width: 80, height: 80, margin: "0 auto 16px" }} />
-              <div style={{ fontFamily: "var(--display)", fontSize: 20, fontWeight: 700, color: THEME.grayLight, marginBottom: 12 }}>{detailAchievement.title}</div>
-              {detailAchievement.progressValue != null && (
-                <div style={{ color: THEME.gray, fontSize: 14, marginBottom: 8 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: THEME.mintLight }}>{Math.floor(detailAchievement.progressValue)}</div>
-                  <div>of {detailAchievement.title.match(/\d+/)?.[0] || "goal"}</div>
-                </div>
-              )}
-              {detailAchievement.unlocked && (
-                <div style={{ color: THEME.mintLight, fontSize: 13, marginBottom: 12 }}>✓ Unlocked!</div>
-              )}
-              <button onClick={() => setDetailAchievement(null)} style={{
-                background: "none", border: "none", color: THEME.mintLight, fontSize: 14, fontWeight: 600, cursor: "pointer"
-              }}>Close</button>
-            </div>
           </div>
         )}
 
