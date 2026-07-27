@@ -1,5 +1,6 @@
 // Constants extracted from App.js. Data only - no logic lives here.
 import { IMG, AVATAR_ME } from "../assets/images";
+import SPOTLIGHT_PEAK_PLACEHOLDER from "../assets/spotlight-peak-placeholder.png";
 
 /* ================================================================
    SCRMBL. — for hikers, by hikers
@@ -51,6 +52,12 @@ export const ASSETS = {
   hikeImages: IMG.hikes,       // keyed by hike id — add more anytime
   listingImages: {},
   avatarImages: { me: AVATAR_ME },
+  /* Discover's Spotlight card: a real cutout photo (transparent sky, opaque
+     terrain) layered in front of the title so the peak sits "in front of"
+     the text. One placeholder shared by every hike for now — Spotlight
+     picks are curated by hand, so real per-hike cutouts can replace this
+     one at a time without any code change. */
+  spotlightPeaks: { default: SPOTLIGHT_PEAK_PLACEHOLDER },
 };
 
 
@@ -118,17 +125,29 @@ export const SCRAMBLE = { 1: "Class 1 · trail", 2: "Class 2 · talus", 3: "Clas
    licensed source (see the audit) — the shape below is the
    contract: id, name, area, mi, gain, summit, klass.
    ================================================================ */
+/* tripMiles: approx driving miles from the Denver metro (the state's
+   population hub) — used to bucket Discover's Near You / Far Out sections.
+   Hand-estimated, same spirit as the rest of this hand-entered data. */
+/* location/elevationRank: only set on hikes with a real summit elevation
+   (the 4 actual Colorado 14ers in this seed set). Real-world geography —
+   not fabricated — but hand-entered as plain fields for now. Shaped as a
+   drop-in point: swap these for a live lookup later without touching
+   anything that reads them (Discover's Spotlight card, see helpers/karma). */
 export const SEED_HIKES = [
-  { id: "bierstadt", name: "Mount Bierstadt", area: "Front Range, CO", mi: 7.0, gain: 2850, summit: 14065, klass: 2, hue: 0 },
-  { id: "skypond", name: "Sky Pond", area: "Rocky Mountain NP, CO", mi: 9.4, gain: 1780, summit: null, klass: 2, hue: 1 },
-  { id: "quandary", name: "Quandary Peak", area: "Tenmile Range, CO", mi: 6.6, gain: 3450, summit: 14271, klass: 1, hue: 2 },
-  { id: "icelakes", name: "Ice Lakes Basin", area: "San Juans, CO", mi: 8.0, gain: 2430, summit: null, klass: 1, hue: 3 },
-  { id: "hanging", name: "Hanging Lake", area: "Glenwood Canyon, CO", mi: 3.2, gain: 1210, summit: null, klass: 1, hue: 4 },
-  { id: "keyhole", name: "Longs Peak — Keyhole", area: "Rocky Mountain NP, CO", mi: 14.5, gain: 5100, summit: 14259, klass: 3, hue: 0 },
-  { id: "bluelakes", name: "Blue Lakes Trail", area: "Sneffels Range, CO", mi: 8.6, gain: 2500, summit: null, klass: 1, hue: 1 },
-  { id: "sanitas", name: "Mount Sanitas Loop", area: "Boulder, CO", mi: 3.3, gain: 1340, summit: null, klass: 1, hue: 2 },
-  { id: "chicago", name: "Chicago Basin", area: "Weminuche, CO", mi: 17.0, gain: 3000, summit: null, klass: 2, hue: 3 },
-  { id: "grays", name: "Grays & Torreys", area: "Front Range, CO", mi: 8.5, gain: 3600, summit: 14278, klass: 1, hue: 4 },
+  { id: "bierstadt", name: "Mount Bierstadt", area: "Front Range, CO", mi: 7.0, gain: 2850, summit: 14065, klass: 2, hue: 0, tripMiles: 55,
+    location: { range: "Front Range", county: "Clear Creek", lat: 39.5828, long: -105.6688 }, elevationRank: { rank: 38, of: 53 } },
+  { id: "skypond", name: "Sky Pond", area: "Rocky Mountain NP, CO", mi: 9.4, gain: 1780, summit: null, klass: 2, hue: 1, tripMiles: 75 },
+  { id: "quandary", name: "Quandary Peak", area: "Tenmile Range, CO", mi: 6.6, gain: 3450, summit: 14271, klass: 1, hue: 2, tripMiles: 85,
+    location: { range: "Tenmile Range", county: "Summit", lat: 39.3973, long: -106.1057 }, elevationRank: { rank: 13, of: 53 } },
+  { id: "icelakes", name: "Ice Lakes Basin", area: "San Juans, CO", mi: 8.0, gain: 2430, summit: null, klass: 1, hue: 3, tripMiles: 330 },
+  { id: "hanging", name: "Hanging Lake", area: "Glenwood Canyon, CO", mi: 3.2, gain: 1210, summit: null, klass: 1, hue: 4, tripMiles: 160 },
+  { id: "keyhole", name: "Longs Peak — Keyhole", area: "Rocky Mountain NP, CO", mi: 14.5, gain: 5100, summit: 14259, klass: 3, hue: 0, tripMiles: 75,
+    location: { range: "Front Range", county: "Boulder", lat: 40.2549, long: -105.6151 }, elevationRank: { rank: 15, of: 53 } },
+  { id: "bluelakes", name: "Blue Lakes Trail", area: "Sneffels Range, CO", mi: 8.6, gain: 2500, summit: null, klass: 1, hue: 1, tripMiles: 320 },
+  { id: "sanitas", name: "Mount Sanitas Loop", area: "Boulder, CO", mi: 3.3, gain: 1340, summit: null, klass: 1, hue: 2, tripMiles: 30 },
+  { id: "chicago", name: "Chicago Basin", area: "Weminuche, CO", mi: 17.0, gain: 3000, summit: null, klass: 2, hue: 3, tripMiles: 350 },
+  { id: "grays", name: "Grays & Torreys", area: "Front Range, CO", mi: 8.5, gain: 3600, summit: 14278, klass: 1, hue: 4, tripMiles: 65,
+    location: { range: "Front Range", county: "Summit", lat: 39.6338, long: -105.8175 }, elevationRank: { rank: 9, of: 53 } },
 ];
 
 /* ================================================================

@@ -19,6 +19,16 @@ export const uid = (p = "x") => `${p}${Date.now().toString(36)}${Math.random().t
 
 export function allHikes(state) { return [...SEED_HIKES, ...state.customHikes]; }
 export function hikeById(state, id) { return allHikes(state).find((h) => h.id === id); }
+
+/* "This week" anchors to the newest community log date rather than the
+   real clock — seed data is a fixed historical window, so anchoring to
+   wall-clock "now" would always show an empty week. Shared by Discover's
+   "Popular this week" and the Spotlight rotation so both move together. */
+export const DAY = 24 * 60 * 60 * 1000;
+export function weekAnchor() {
+  const times = COMMUNITY_LOGS.map((l) => new Date(`${l.date}T00:00:00`).getTime());
+  return times.length ? Math.max(...times) : Date.now();
+}
 export const hasStats = (h) => !!h && h.gain != null && h.mi != null;
 export const fmtStats = (h) => (hasStats(h) ? `${h.mi} mi · ${h.gain.toLocaleString()}′` : "Stats not added");
 export const ratingOut = (r) => (r / 2).toFixed(r % 2 === 0 ? 0 : 1);
