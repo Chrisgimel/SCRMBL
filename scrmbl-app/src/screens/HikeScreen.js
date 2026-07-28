@@ -230,7 +230,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
       {poiDraft && (
         <AddPoiSheet lat={poiDraft.lat} lng={poiDraft.lng} onClose={() => setPoiDraft(null)}
           onSubmit={async (data) => {
-            const ok = await addPoi({ ...poiDraft, ...data });
+            const ok = await addPoi(data);
             if (ok) toast("Tip added"); else toast("Failed to add tip", true);
             return ok;
           }} />
