@@ -224,7 +224,13 @@ function bestChains(ways) {
 }
 
 function scoreChain(chain, mi) {
-  if (!mi || chain.length < MIN_CHAIN_MI) return { confidence: 'none', bestFit: Infinity };
+  if (chain.length < MIN_CHAIN_MI) return { confidence: 'none', bestFit: Infinity };
+  if (!mi) {
+    // No stated mileage to check the length against (e.g. a custom hike
+    // created without a distance value) — can't confirm a length fit, so
+    // cap at 'medium' and prefer the longest candidate chain instead.
+    return { confidence: 'medium', bestFit: -chain.length };
+  }
   const targets = [mi, mi / 2].filter((t) => t > 0);
   const bestFit = Math.min(...targets.map((t) => Math.abs(chain.length - t) / t));
   if (chain.segmentCount === 1 && bestFit <= 0.2) return { confidence: 'high', bestFit };
@@ -259,9 +265,12 @@ async function matchTrail({ name, lat, long, mi }) {
   });
 
   if (bestScore.confidence === 'none') {
+    const reason = miNum
+      ? `too far from the stated ${miNum}mi`
+      : `shorter than the ${MIN_CHAIN_MI}mi minimum`;
     return {
       points: [], confidence: 'none',
-      source: `Best OSM match for "${name}" was ${best.length.toFixed(2)}mi, too far from the stated ${mi}mi`,
+      source: `Best OSM match for "${name}" was ${best.length.toFixed(2)}mi, ${reason}`,
       cacheable: true,
     };
   }

@@ -128,3 +128,7 @@ export async function getTrailGeometry(trailId, { name, lat, long, mi } = {}) {
   const qs = params.toString();
   return apiCall(`/trails/${trailId}/geometry${qs ? `?${qs}` : ''}`);
 }
+
+export async function geocodeLocation(query) {
+  return apiCall(`/geocode?q=${encodeURIComponent(query)}`);
+}

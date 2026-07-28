@@ -320,6 +320,47 @@ app.get('/api/users/:handle/gear', async (req, res) => {
 });
 
 // ============================================
+// GEOCODE ROUTE
+// ============================================
+
+// Resolve a free-text place name to coordinates via Nominatim (OSM), so
+// custom hikes (which collect no lat/long today) can become eligible for
+// the same trail-geometry pipeline as seeded hikes. No auth, no caching —
+// this is a low-volume, user-initiated lookup (once per custom hike
+// created), unlike the trail matcher which runs per trail view.
+app.get('/api/geocode', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(400).json({ error: 'Missing query' });
+    }
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'SCRMBL/0.1 (hiking log app, local dev)',
+        'Accept': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      return res.status(502).json({ error: 'Geocoding service unavailable' });
+    }
+    const results = await response.json();
+    if (!results.length) {
+      return res.json({ found: false });
+    }
+    res.json({
+      found: true,
+      lat: Number(results[0].lat),
+      long: Number(results[0].lon),
+      display_name: results[0].display_name,
+    });
+  } catch (error) {
+    console.error('Error geocoding:', error);
+    res.status(500).json({ error: 'Failed to geocode' });
+  }
+});
+
+// ============================================
 // TRAIL ROUTES
 // ============================================
 
