@@ -132,3 +132,22 @@ export async function getTrailGeometry(trailId, { name, lat, long, mi } = {}) {
 export async function geocodeLocation(query) {
   return apiCall(`/geocode?q=${encodeURIComponent(query)}`);
 }
+
+// ============================================
+// POI API (community tips/warnings/landmarks)
+// ============================================
+
+export async function getTrailPois(trailId) {
+  return apiCall(`/trails/${trailId}/pois`);
+}
+
+export async function addPoi({ trail_id, lat, lng, type, title, note }) {
+  return apiCall('/pois', {
+    method: 'POST',
+    body: JSON.stringify({ trail_id, lat, lng, type, title, note }),
+  });
+}
+
+export async function deletePoi(id) {
+  return apiCall(`/pois/${id}`, { method: 'DELETE' });
+}

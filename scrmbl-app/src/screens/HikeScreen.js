@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronLeft, Bookmark, MapPin, Sparkles, Camera, Award, ChevronRight } from "lucide-react";
+import { ChevronLeft, Bookmark, MapPin, Sparkles, Camera, Award, ChevronRight, Crosshair } from "lucide-react";
 import Empty from "../components/ui/Empty";
 import HikePoster from "../components/hike/HikePoster";
 import TrailMap from "../components/hike/TrailMap";
@@ -8,6 +8,9 @@ import ReviewCard from "../components/hike/ReviewCard";
 import UnderlineTabs from "../components/ui/UnderlineTabs";
 import Avatar from "../components/ui/Avatar";
 import AchievementBadge from "../components/ui/AchievementBadge";
+import AddPoiSheet from "../components/modals/AddPoiSheet";
+import PoiDetailSheet from "../components/modals/PoiDetailSheet";
+import { usePois } from "../hooks/usePois";
 
 import { ASSETS, EFFORT_LABEL, EFFORTS, THEME, USER_BY_HANDLE } from "../constants";
 import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hikeById, photoGeo, photoSrc, rankedBy, rarityOf, ratingOut } from "../utils/helpers";
@@ -15,6 +18,10 @@ import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hi
 function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, toggleBucklist, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const h = hikeById(state, hikeId);
   const [tab, setTab] = useState("Reviews");
+  const [poiDraft, setPoiDraft] = useState(null); // { lat, lng } | null
+  const [poiDetail, setPoiDetail] = useState(null); // poi | null
+  const [locating, setLocating] = useState(false);
+  const { pois, addPoi, removePoi } = usePois(hikeId, state.signedIn);
   if (!h) return <Empty title="Trail not found" subtitle="It may have been removed from your custom routes." />;
 
   const agg = aggregate(state, hikeId);
@@ -198,9 +205,44 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
               </div>
         )}
 
-        {tab === "Map" && <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track}
-          photoPins={photoPins} onOpenPhoto={openPhotoViewer} />}
+        {tab === "Map" && (
+          <>
+            <button className="outline-btn" style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              disabled={locating}
+              onClick={() => {
+                if (!navigator.geolocation) { toast("Location isn't available in this browser", true); return; }
+                setLocating(true);
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => { setLocating(false); setPoiDraft({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+                  () => { setLocating(false); toast("Couldn't get your location — check permissions.", true); },
+                  { enableHighAccuracy: true, timeout: 8000 }
+                );
+              }}>
+              <Crosshair size={15} /> {locating ? "Finding you…" : "Add a tip at my location"}
+            </button>
+            <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track}
+              photoPins={photoPins} onOpenPhoto={openPhotoViewer}
+              pois={pois} onMapTap={(lat, lng) => setPoiDraft({ lat, lng })} onSelectPoi={setPoiDetail} />
+          </>
+        )}
       </div>
+
+      {poiDraft && (
+        <AddPoiSheet lat={poiDraft.lat} lng={poiDraft.lng} onClose={() => setPoiDraft(null)}
+          onSubmit={async (data) => {
+            const ok = await addPoi({ ...poiDraft, ...data });
+            if (ok) toast("Tip added"); else toast("Failed to add tip", true);
+            return ok;
+          }} />
+      )}
+      {poiDetail && (
+        <PoiDetailSheet poi={poiDetail} onClose={() => setPoiDetail(null)}
+          onDelete={poiDetail.is_mine ? async () => {
+            const ok = await removePoi(poiDetail.id);
+            if (ok) { setPoiDetail(null); toast("Tip removed"); } else toast("Failed to remove tip", true);
+            return ok;
+          } : undefined} />
+      )}
     </div>
   );
 }

@@ -403,6 +403,81 @@ app.get('/api/trails/:trail_id/geometry', async (req, res) => {
 });
 
 // ============================================
+// POI ROUTES (community tips/warnings/landmarks)
+// ============================================
+
+const POI_TYPES = ['warning', 'tip', 'landmark'];
+
+// List POIs for a trail — public (no auth) so tips are visible to anyone
+// viewing the map, same precedent as the public like-count endpoint. When a
+// session cookie is present, each row is annotated with is_mine so the
+// frontend can offer delete only to the author, without the client ever
+// having to track its own numeric user id.
+app.get('/api/trails/:trail_id/pois', async (req, res) => {
+  try {
+    const { trail_id } = req.params;
+    const rows = await allQuery(
+      `SELECT pois.id, pois.trail_id, pois.lat, pois.lng, pois.type, pois.title, pois.note,
+              pois.user_id, pois.created_at, users.name AS author
+       FROM pois JOIN users ON users.id = pois.user_id
+       WHERE pois.trail_id = ?
+       ORDER BY pois.created_at DESC`,
+      [trail_id]
+    );
+    const myId = req.session.userId || null;
+    const pois = rows.map(({ user_id, ...rest }) => ({ ...rest, is_mine: user_id === myId }));
+    res.json(pois);
+  } catch (error) {
+    console.error('Error fetching POIs:', error);
+    res.status(500).json({ error: 'Failed to fetch POIs' });
+  }
+});
+
+// Add a POI
+app.post('/api/pois', requireAuth, async (req, res) => {
+  try {
+    const { trail_id, lat, lng, type, title, note } = req.body;
+    if (!trail_id || lat == null || lng == null || !POI_TYPES.includes(type) || !title || !title.trim()) {
+      return res.status(400).json({ error: 'trail_id, lat, lng, a valid type, and a title are required' });
+    }
+
+    const result = await runQuery(
+      'INSERT INTO pois (trail_id, user_id, lat, lng, type, title, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [trail_id, req.session.userId, lat, lng, type, title.trim(), note && note.trim() ? note.trim() : null]
+    );
+
+    const row = await getQuery(
+      `SELECT pois.id, pois.trail_id, pois.lat, pois.lng, pois.type, pois.title, pois.note,
+              pois.created_at, users.name AS author
+       FROM pois JOIN users ON users.id = pois.user_id WHERE pois.id = ?`,
+      [result.id]
+    );
+    res.json({ ...row, is_mine: true });
+  } catch (error) {
+    console.error('Error adding POI:', error);
+    res.status(500).json({ error: 'Failed to add POI' });
+  }
+});
+
+// Delete a POI (author only)
+app.delete('/api/pois/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await runQuery(
+      'DELETE FROM pois WHERE id = ? AND user_id = ?',
+      [id, req.session.userId]
+    );
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Tip not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting POI:', error);
+    res.status(500).json({ error: 'Failed to delete POI' });
+  }
+});
+
+// ============================================
 // START SERVER
 // ============================================
 

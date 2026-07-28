@@ -86,6 +86,31 @@ function initializeDatabase() {
         console.log('Trail geometry table ready');
       }
     });
+
+    // POIs table — community tips/warnings/landmarks pinned to a location on
+    // a trail. Cross-account by design (unlike GPS tracks/photos, which are
+    // local proof-of-your-own-hike data): same shape as `likes`, a user_id
+    // FK plus a shared public read endpoint.
+    db.run(`
+      CREATE TABLE IF NOT EXISTS pois (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trail_id TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        lat REAL NOT NULL,
+        lng REAL NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        note TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating pois table:', err);
+      } else {
+        console.log('POIs table ready');
+      }
+    });
   });
 }
 
