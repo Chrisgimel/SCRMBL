@@ -17,6 +17,13 @@ export const seededRand = (str) => {
 };
 export const uid = (p = "x") => `${p}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
+/* Photos are usually a plain data-URL/URL string (seed/community data, and
+   every entry logged before Phase 3 geotagging). PhotoPicker now emits
+   {src, lat, lng} for newly-added photos so a pin can be placed on the
+   map — these two helpers let every render site accept either shape. */
+export const photoSrc = (p) => (typeof p === "string" ? p : p.src);
+export const photoGeo = (p) => (p && typeof p === "object" && p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null);
+
 export function allHikes(state) { return [...SEED_HIKES, ...state.customHikes]; }
 export function hikeById(state, id) { return allHikes(state).find((h) => h.id === id); }
 

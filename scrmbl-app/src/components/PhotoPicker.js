@@ -1,7 +1,9 @@
 // PhotoPicker - Photo upload component with image downscaling
 import React, { useRef } from "react";
 import { Camera, X } from "lucide-react";
+import exifr from "exifr";
 import { THEME } from "../constants";
+import { photoSrc } from "../utils/helpers";
 
 function fileToThumb(file, max = 900) {
   return new Promise((resolve, reject) => {
@@ -24,6 +26,14 @@ function fileToThumb(file, max = 900) {
   });
 }
 
+/* GPS EXIF lives on the original file, not the canvas-redrawn thumbnail
+   (canvas strips all metadata) — read it from `file` in parallel with the
+   downscale. Most photos have none (screenshots, downloaded images, EXIF
+   stripped by the OS) so a missing/unreadable tag is expected, not an error. */
+function fileToGeo(file) {
+  return exifr.gps(file).then((gps) => (gps ? { lat: gps.latitude, lng: gps.longitude } : null)).catch(() => null);
+}
+
 function PhotoPicker({ photos, onChange, max = 4, onError }) {
   const input = useRef(null);
   const add = async (files) => {
@@ -31,7 +41,10 @@ function PhotoPicker({ photos, onChange, max = 4, onError }) {
     if (room <= 0) return;
     try {
       const next = [];
-      for (const f of [...files].slice(0, room)) next.push(await fileToThumb(f));
+      for (const f of [...files].slice(0, room)) {
+        const [src, geo] = await Promise.all([fileToThumb(f), fileToGeo(f)]);
+        next.push({ src, lat: geo?.lat ?? null, lng: geo?.lng ?? null });
+      }
       onChange([...photos, ...next]);
     } catch { onError?.("Couldn't read that image. Try a JPG or PNG."); }
   };
@@ -39,7 +52,7 @@ function PhotoPicker({ photos, onChange, max = 4, onError }) {
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
       {photos.map((p, i) => (
         <div key={i} style={{ position: "relative", width: 66, height: 66, borderRadius: 10, overflow: "hidden" }}>
-          <img src={p} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={photoSrc(p)} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <button className="mini-btn" aria-label={`Remove photo ${i + 1}`}
             onClick={() => onChange(photos.filter((_, j) => j !== i))}
             style={{ position: "absolute", top: 3, right: 3, padding: 3, background: "rgba(0,0,0,0.6)" }}>

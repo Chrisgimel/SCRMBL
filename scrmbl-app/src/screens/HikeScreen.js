@@ -10,9 +10,9 @@ import Avatar from "../components/ui/Avatar";
 import AchievementBadge from "../components/ui/AchievementBadge";
 
 import { ASSETS, EFFORT_LABEL, EFFORTS, THEME, USER_BY_HANDLE } from "../constants";
-import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hikeById, rankedBy, rarityOf, ratingOut } from "../utils/helpers";
+import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hikeById, photoGeo, photoSrc, rankedBy, rarityOf, ratingOut } from "../utils/helpers";
 
-function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, toggleBucklist, toggleLike, isLiked, getLikeCount }) {
+function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, toggleBucklist, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const h = hikeById(state, hikeId);
   const [tab, setTab] = useState("Reviews");
   if (!h) return <Empty title="Trail not found" subtitle="It may have been removed from your custom routes." />;
@@ -26,9 +26,16 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
   const myTop = state.top.indexOf(hikeId);
 
   const photos = [
-    ...myEntries.flatMap((l) => l.photos.map((p) => ({ src: p, handle: "you" }))),
+    ...myEntries.flatMap((l) => l.photos.map((p) => ({ src: photoSrc(p), handle: "you" }))),
     ...(ASSETS.hikeImages[hikeId] ? [{ src: ASSETS.hikeImages[hikeId], handle: null }] : []),
   ];
+
+  /* Geotagged photo pins for the Map tab — only photos with EXIF GPS
+     (see PhotoPicker/photoGeo) qualify; most photos won't. */
+  const photoPins = myEntries.flatMap((l) => l.photos
+    .map((p) => ({ src: photoSrc(p), geo: photoGeo(p) }))
+    .filter((p) => p.geo)
+    .map(({ src, geo }) => ({ src, lat: geo.lat, lng: geo.lng })));
 
   const dist = [0, 0, 0, 0, 0];
   entries.filter((e) => e.rating > 0).forEach((e) => { dist[Math.ceil(e.rating / 2) - 1]++; });
@@ -142,7 +149,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
             : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {entries.map((e) => (
                   <ReviewCard key={e.id} state={state} setState={setState} entry={e} openUser={openUser}
-                    toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} hike={h} />
+                    toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} hike={h} openPhotoViewer={openPhotoViewer} />
                 ))}
               </div>
         )}
@@ -191,7 +198,8 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
               </div>
         )}
 
-        {tab === "Map" && <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track} />}
+        {tab === "Map" && <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track}
+          photoPins={photoPins} onOpenPhoto={openPhotoViewer} />}
       </div>
     </div>
   );

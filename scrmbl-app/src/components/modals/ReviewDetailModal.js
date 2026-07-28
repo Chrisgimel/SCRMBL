@@ -5,7 +5,7 @@ import Avatar from "../ui/Avatar";
 import Rating from "../ui/Rating";
 import AchievementBadge from "../ui/AchievementBadge";
 import { THEME, USER_BY_HANDLE, EFFORT_LABEL } from "../../constants";
-import { fmtDate, hikeById, hasDistanceBadge, hasAltitudeBadge, isFastestEntry, isPR } from "../../utils/helpers";
+import { fmtDate, hikeById, hasDistanceBadge, hasAltitudeBadge, isFastestEntry, isPR, photoSrc } from "../../utils/helpers";
 
 function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const [explainBadge, setExplainBadge] = useState(null);
@@ -91,8 +91,8 @@ function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLik
       {review.photos?.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
           {review.photos.map((p, i) => (
-            <button key={i} onClick={() => openPhotoViewer(p)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 10, overflow: "hidden" }} aria-label="View larger">
-              <img src={p} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover" }} />
+            <button key={i} onClick={() => openPhotoViewer(photoSrc(p))} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 10, overflow: "hidden" }} aria-label="View larger">
+              <img src={photoSrc(p)} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover" }} />
             </button>
           ))}
         </div>

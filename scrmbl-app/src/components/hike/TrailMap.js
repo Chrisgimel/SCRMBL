@@ -12,7 +12,7 @@ import Empty from "../ui/Empty";
    the only place in the app that imports leaflet or react-leaflet, and the
    only place that knows trail geometry is a separate fetch, not a field on
    the hike object itself. */
-function TrailMap({ hike, userTrack }) {
+function TrailMap({ hike, userTrack, photoPins, onOpenPhoto }) {
   const [points, setPoints] = useState(null); // null = loading
 
   useEffect(() => {
@@ -34,17 +34,23 @@ function TrailMap({ hike, userTrack }) {
   }
   const hasTrail = points.length >= 2;
   const hasTrack = userTrack && userTrack.length >= 2;
-  if (!hasTrail && !hasTrack) {
+  const pins = photoPins || [];
+  const hasPins = pins.length > 0;
+  if (!hasTrail && !hasTrack && !hasPins) {
     return <Empty icon={MapPin} title="No map yet" subtitle="This trail doesn't have route data plotted yet." />;
   }
 
-  const bounds = hasTrail && hasTrack ? [...points, ...userTrack] : hasTrail ? points : userTrack;
+  const bounds = [
+    ...(hasTrail ? points : []),
+    ...(hasTrack ? userTrack : []),
+    ...(hasPins ? pins.map((p) => [p.lat, p.lng]) : []),
+  ];
 
   return (
     <div style={{ marginTop: 4, borderRadius: 14, overflow: "hidden", border: `1px solid ${THEME.hairline}` }}>
       <MapContainer
         bounds={bounds}
-        boundsOptions={{ padding: [24, 24] }}
+        boundsOptions={{ padding: [24, 24], maxZoom: 15 }}
         style={{ height: 260, width: "100%" }}
         scrollWheelZoom={false}
       >
@@ -78,6 +84,11 @@ function TrailMap({ hike, userTrack }) {
               pathOptions={{ color: THEME.sky, weight: 2, fillColor: THEME.sky, fillOpacity: 1 }} />
           </>
         )}
+        {hasPins && pins.map((p, i) => (
+          <CircleMarker key={i} center={[p.lat, p.lng]} radius={7}
+            pathOptions={{ color: THEME.slateDeep, weight: 2, fillColor: THEME.plum, fillOpacity: 1 }}
+            eventHandlers={{ click: () => onOpenPhoto?.(p.src) }} />
+        ))}
       </MapContainer>
       {hasTrail && hasTrack && (
         <div style={{ color: THEME.textDim, fontSize: 10.5, padding: "6px 10px" }}>

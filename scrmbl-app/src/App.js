@@ -175,7 +175,7 @@ export default function App() {
               {top?.type === "hike" ? (
                 <HikeScreen state={state} setState={setState} hikeId={top.id} onBack={back}
                   onLog={(id) => openLog(id)} openUser={openUser} toast={toast} toggleBucklist={toggleBucklist}
-                  toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} />
+                  toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openPhotoViewer={setPhotoViewer} />
               ) : top?.type === "user" ? (
                 <UserScreen state={state} setState={setState} handle={top.id} onBack={back} openHike={openHike}
                   toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} />

@@ -6,7 +6,7 @@ import RareChip from "../ui/RareChip";
 import AchievementBadge from "../ui/AchievementBadge";
 
 import { EFFORT_LABEL, THEME, USER_BY_HANDLE } from "../../constants";
-import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isFastestEntry, isPR, isRareHike } from "../../utils/helpers";
+import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isFastestEntry, isPR, isRareHike, photoSrc } from "../../utils/helpers";
 
 function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const u = entry.mine ? { name: "You", hue: state.user.hue } : USER_BY_HANDLE[entry.handle];
@@ -72,8 +72,8 @@ function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLi
       {entry.photos?.length > 0 && (
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {entry.photos.map((p, i) => (
-            <button key={i} onClick={() => openPhotoViewer?.(p)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, overflow: "hidden" }} aria-label="View larger">
-              <img src={p} alt="" style={{ width: 62, height: 62, borderRadius: 8, objectFit: "cover" }} />
+            <button key={i} onClick={() => openPhotoViewer?.(photoSrc(p))} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, overflow: "hidden" }} aria-label="View larger">
+              <img src={photoSrc(p)} alt="" style={{ width: 62, height: 62, borderRadius: 8, objectFit: "cover" }} />
             </button>
           ))}
         </div>
