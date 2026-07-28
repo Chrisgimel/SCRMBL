@@ -87,7 +87,9 @@ function GlobalStyles() {
       .poi-prompt-close { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.25); border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; z-index: 2; }
       .poi-map-corner { position: relative; width: 76px; height: 76px; border-radius: 14px; overflow: hidden; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 6px 16px rgba(0,0,0,0.35); transition: width 0.22s ease, height 0.22s ease; }
       .poi-map-corner.open { width: 100%; height: 180px; }
-      .poi-map-toggle { position: absolute; top: 4px; left: 4px; background: rgba(12,21,26,0.75); border: none; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; z-index: 4; }
+      .poi-map-toggle { position: absolute; top: 4px; left: 4px; background: rgba(12,21,26,0.75); border: none; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; z-index: 1000; }
+      .poi-map-expand-hit { position: absolute; inset: 0; background: rgba(12,21,26,0.15); border: none; display: flex; align-items: flex-start; justify-content: flex-start; padding: 4px; cursor: pointer; z-index: 1000; }
+      .poi-map-expand-hit svg { background: rgba(12,21,26,0.75); border-radius: 6px; padding: 4px; box-sizing: content-box; color: #fff; }
       .poi-prompt-send { margin-top: 14px; width: 100%; border: none; border-radius: 22px; padding: 12px; background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
       .poi-prompt-send:disabled { opacity: 0.4; cursor: default; }
       @media (prefers-reduced-motion: reduce) { .poi-prompt { animation: none; } }

@@ -206,7 +206,12 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
         )}
 
         {tab === "Map" && (
-          <>
+          /* Leaflet's tile layer is GPU-composited (transform-positioned
+             tiles), which the scrim's backdrop-filter doesn't reliably see
+             through in every browser — blurring the map directly (instead
+             of relying on the backdrop-filter to blur what's behind it)
+             sidesteps that entirely. */
+          <div style={{ filter: poiDraft ? "blur(4px)" : "none", transition: "filter 0.2s ease" }}>
             <button className="outline-btn" style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               disabled={locating}
               onClick={() => {
@@ -223,7 +228,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
             <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track}
               photoPins={photoPins} onOpenPhoto={openPhotoViewer}
               pois={pois} onMapTap={(lat, lng) => setPoiDraft({ lat, lng })} onSelectPoi={setPoiDetail} />
-          </>
+          </div>
         )}
       </div>
 

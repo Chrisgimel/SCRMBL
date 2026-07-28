@@ -75,10 +75,19 @@ function AddPoiSheet({ lat, lng, onSubmit, onClose }) {
               <CircleMarker center={[pos.lat, pos.lng]} radius={7}
                 pathOptions={{ color: "#fff", weight: 2, fillColor: THEME.slateMid, fillOpacity: 1 }} />
             </MapContainer>
-            <button className="poi-map-toggle" onClick={() => setMapOpen((v) => !v)}
-              aria-label={mapOpen ? "Shrink map" : "Adjust pin location"}>
-              {mapOpen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-            </button>
+            {mapOpen ? (
+              <button className="poi-map-toggle" onClick={() => setMapOpen(false)} aria-label="Shrink map">
+                <Minimize2 size={13} />
+              </button>
+            ) : (
+              /* Covers the whole thumbnail (not just a small icon chip) so
+                 tapping anywhere on the preview expands it — more forgiving
+                 to hit, and matches how the preview reads visually as one
+                 tappable thing. */
+              <button className="poi-map-expand-hit" onClick={() => setMapOpen(true)} aria-label="Adjust pin location">
+                <Maximize2 size={13} />
+              </button>
+            )}
           </div>
         </div>
         {mapOpen && (
