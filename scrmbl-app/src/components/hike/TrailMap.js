@@ -5,6 +5,7 @@ import { MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { THEME } from "../../constants";
 import { POI_TYPE_BY_ID } from "../../constants/poiTypes";
+import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION } from "../../constants/mapTiles";
 import { getTrailGeometry } from "../../utils/api";
 import Empty from "../ui/Empty";
 
@@ -68,10 +69,7 @@ function TrailMap({ hike, userTrack, photoPins, onOpenPhoto, pois, onMapTap, onS
         scrollWheelZoom={false}
       >
         {onMapTap && <MapTapCapture onTap={onMapTap} />}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer attribution={DARK_TILE_ATTRIBUTION} url={DARK_TILE_URL} />
         {hasTrail && (
           <>
             {/* Casing: a wider dark outline under the route so it reads clearly
@@ -112,7 +110,7 @@ function TrailMap({ hike, userTrack, photoPins, onOpenPhoto, pois, onMapTap, onS
       {(hasTrail && hasTrack) || onMapTap ? (
         <div style={{ color: THEME.textDim, fontSize: 10.5, padding: "6px 10px" }}>
           {hasTrail && hasTrack && <>— Trail &nbsp;·&nbsp; - - Your track{onMapTap ? " · " : ""}</>}
-          {onMapTap && "Tap the map to add a tip"}
+          {onMapTap && "Tap the map to add beta"}
         </div>
       ) : null}
     </div>

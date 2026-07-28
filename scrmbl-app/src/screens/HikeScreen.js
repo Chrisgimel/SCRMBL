@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronLeft, Bookmark, MapPin, Sparkles, Camera, Award, ChevronRight, Crosshair } from "lucide-react";
+import { ChevronLeft, Bookmark, MapPin, Sparkles, Camera, Award, ChevronRight, Crosshair, ListFilter } from "lucide-react";
 import Empty from "../components/ui/Empty";
 import HikePoster from "../components/hike/HikePoster";
 import TrailMap from "../components/hike/TrailMap";
@@ -10,6 +10,7 @@ import Avatar from "../components/ui/Avatar";
 import AchievementBadge from "../components/ui/AchievementBadge";
 import AddPoiSheet from "../components/modals/AddPoiSheet";
 import PoiDetailSheet from "../components/modals/PoiDetailSheet";
+import PoiSectionsSheet from "../components/modals/PoiSectionsSheet";
 import { usePois } from "../hooks/usePois";
 
 import { ASSETS, EFFORT_LABEL, EFFORTS, THEME, USER_BY_HANDLE } from "../constants";
@@ -20,6 +21,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
   const [tab, setTab] = useState("Reviews");
   const [poiDraft, setPoiDraft] = useState(null); // { lat, lng } | null
   const [poiDetail, setPoiDetail] = useState(null); // poi | null
+  const [poiSections, setPoiSections] = useState(false);
   const [locating, setLocating] = useState(false);
   const { pois, addPoi, removePoi } = usePois(hikeId, state.signedIn);
   if (!h) return <Empty title="Trail not found" subtitle="It may have been removed from your custom routes." />;
@@ -223,8 +225,14 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
                   { enableHighAccuracy: true, timeout: 8000 }
                 );
               }}>
-              <Crosshair size={15} /> {locating ? "Finding you…" : "Add a tip at my location"}
+              <Crosshair size={15} /> {locating ? "Finding you…" : "Add beta at my location"}
             </button>
+            {pois.length > 0 && (
+              <button className="outline-btn" style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                onClick={() => setPoiSections(true)}>
+                <ListFilter size={15} /> View beta by section · {pois.length}
+              </button>
+            )}
             <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track}
               photoPins={photoPins} onOpenPhoto={openPhotoViewer}
               pois={pois} onMapTap={(lat, lng) => setPoiDraft({ lat, lng })} onSelectPoi={setPoiDetail} />
@@ -236,7 +244,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
         <AddPoiSheet lat={poiDraft.lat} lng={poiDraft.lng} onClose={() => setPoiDraft(null)}
           onSubmit={async (data) => {
             const ok = await addPoi(data);
-            if (ok) toast("Tip added"); else toast("Failed to add tip", true);
+            if (ok) toast("Beta added"); else toast("Failed to add beta", true);
             return ok;
           }} />
       )}
@@ -244,9 +252,12 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
         <PoiDetailSheet poi={poiDetail} onClose={() => setPoiDetail(null)}
           onDelete={poiDetail.is_mine ? async () => {
             const ok = await removePoi(poiDetail.id);
-            if (ok) { setPoiDetail(null); toast("Tip removed"); } else toast("Failed to remove tip", true);
+            if (ok) { setPoiDetail(null); toast("Beta removed"); } else toast("Failed to remove beta", true);
             return ok;
           } : undefined} />
+      )}
+      {poiSections && (
+        <PoiSectionsSheet pois={pois} onSelectPoi={setPoiDetail} onClose={() => setPoiSections(false)} />
       )}
     </div>
   );

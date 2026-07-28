@@ -406,7 +406,7 @@ app.get('/api/trails/:trail_id/geometry', async (req, res) => {
 // POI ROUTES (community tips/warnings/landmarks)
 // ============================================
 
-const POI_TYPES = ['warning', 'tip', 'landmark'];
+const POI_TYPES = ['warning', 'beta', 'landmark'];
 
 // List POIs for a trail — public (no auth) so tips are visible to anyone
 // viewing the map, same precedent as the public like-count endpoint. When a

@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "rea
 import "leaflet/dist/leaflet.css";
 import { Maximize2, Minimize2, Send, X } from "lucide-react";
 import { THEME } from "../../constants";
+import { DARK_TILE_URL } from "../../constants/mapTiles";
 
 /* Same click-capture trick as TrailMap's MapTapCapture — kept local here
    rather than shared, since this map's job (drag a single pin around to
@@ -49,7 +50,7 @@ function AddPoiSheet({ lat, lng, onSubmit, onClose }) {
   async function handleSubmit() {
     if (!text.trim() || submitting) return;
     setSubmitting(true);
-    const ok = await onSubmit({ type: "tip", title: text.trim(), note: "", lat: pos.lat, lng: pos.lng });
+    const ok = await onSubmit({ type: "beta", title: text.trim(), note: "", lat: pos.lat, lng: pos.lng });
     setSubmitting(false);
     if (ok) onClose();
   }
@@ -58,18 +59,18 @@ function AddPoiSheet({ lat, lng, onSubmit, onClose }) {
     <div className="poi-prompt-scrim" onClick={onClose}>
       <div className="poi-prompt" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="Cancel" className="poi-prompt-close"><X size={17} /></button>
-        <div className="poi-prompt-title">Add a tip</div>
+        <div className="poi-prompt-title">Add beta</div>
         <textarea autoFocus className="poi-prompt-input" rows={4} value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Add a tip, POI, beta, or note for future hikers"
-          aria-label="Tip text" />
+          placeholder="Add beta, a tip, or a note for future hikers"
+          aria-label="Beta text" />
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div className={mapOpen ? "poi-map-corner open" : "poi-map-corner"}>
             <MapContainer center={[pos.lat, pos.lng]} zoom={15} zoomControl={false}
               dragging={mapOpen} scrollWheelZoom={false} doubleClickZoom={false} touchZoom={mapOpen} attributionControl={false}
               style={{ width: "100%", height: "100%" }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer url={DARK_TILE_URL} />
               <InvalidateOnResize watch={mapOpen} />
               {mapOpen && <MapTapCapture onTap={(la, ln) => setPos({ lat: la, lng: ln })} />}
               <CircleMarker center={[pos.lat, pos.lng]} radius={7}
@@ -96,8 +97,8 @@ function AddPoiSheet({ lat, lng, onSubmit, onClose }) {
           </div>
         )}
 
-        <button onClick={handleSubmit} disabled={!text.trim() || submitting} className="poi-prompt-send" aria-label="Add tip">
-          <Send size={15} color="#fff" /> {submitting ? "Adding…" : "Add tip"}
+        <button onClick={handleSubmit} disabled={!text.trim() || submitting} className="poi-prompt-send" aria-label="Add beta">
+          <Send size={15} color="#fff" /> {submitting ? "Adding…" : "Add beta"}
         </button>
       </div>
     </div>

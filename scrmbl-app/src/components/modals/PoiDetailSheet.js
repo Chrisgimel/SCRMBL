@@ -14,7 +14,7 @@ function PoiDetailSheet({ poi, onDelete, onClose }) {
   }
 
   return (
-    <Sheet title="Trail tip" onClose={onClose}>
+    <Sheet title="Trail beta" onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{
           display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px",
@@ -38,7 +38,7 @@ function PoiDetailSheet({ poi, onDelete, onClose }) {
       {poi.is_mine && (
         <button className="outline-btn" style={{ marginTop: 18, color: "#8A3B3B", borderColor: "#8A3B3B" }}
           disabled={deleting} onClick={handleDelete}>
-          {deleting ? "Removing…" : "Remove this tip"}
+          {deleting ? "Removing…" : "Remove this beta"}
         </button>
       )}
     </Sheet>

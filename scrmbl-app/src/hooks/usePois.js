@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as api from '../utils/api';
 
 /**
- * Custom hook to manage a trail's POIs (community tips/warnings/landmarks)
+ * Custom hook to manage a trail's POIs (community beta/warnings/landmarks)
  * with backend sync. Unlike GPS tracks/photos, POIs are shared across
  * accounts, so this always reflects the server, not a local blob.
  */
