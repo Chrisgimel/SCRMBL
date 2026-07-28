@@ -79,6 +79,14 @@ function GlobalStyles() {
       .menu { position: absolute; top: 44px; z-index: 10; background: ${THEME.surfaceHi}; border: 1px solid ${THEME.hairline}; border-radius: 14px; padding: 6px; min-width: 170px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
       .menu-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; background: transparent; border: none; border-radius: 9px; padding: 9px 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
       .menu-item:hover { background: rgba(255,255,255,0.08); }
+      .poi-prompt-scrim { position: absolute; inset: 0; z-index: 30; }
+      .poi-prompt { position: absolute; left: 14px; right: 14px; bottom: 92px; display: flex; align-items: center; background: ${THEME.slateMid}; border-radius: 26px; box-shadow: 0 14px 34px rgba(0,0,0,0.45); animation: slideUp 0.2s ease; }
+      .poi-prompt-input { flex: 1; min-width: 0; border: none; background: transparent; color: #fff; font-size: 14.5px; font-family: var(--body); outline: none; padding: 13px 4px 13px 18px; }
+      .poi-prompt-input::placeholder { color: rgba(255,255,255,0.68); }
+      .poi-prompt-close { background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 8px; display: flex; flex-shrink: 0; }
+      .poi-prompt-send { background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 6px; flex-shrink: 0; }
+      .poi-prompt-send:disabled { opacity: 0.4; cursor: default; }
+      @media (prefers-reduced-motion: reduce) { .poi-prompt { animation: none; } }
       .ledger { background: ${THEME.surface}; border-radius: 14px; padding: 12px 14px; margin-top: 14px; }
       .ledger-row { display: flex; gap: 10px; align-items: center; color: ${THEME.grayLight}; font-size: 12.5px; padding: 4px 0; }
       .thread-head { background: ${THEME.surface}; border-radius: 12px; padding: 10px 12px; font-size: 12.5px; }

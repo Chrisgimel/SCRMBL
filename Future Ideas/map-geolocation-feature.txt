@@ -1,6 +1,6 @@
 ================================================================================
 FEATURE: Trail Mapping with GPS Tracks, Photo Locations, and POIs
-Status: PHASE 1 + PHASE 2 DONE. Phase 3 (photo geotagging) not started.
+Status: ALL FOUR PHASES DONE. Feature complete per this doc's original scope.
 ================================================================================
 
 OVERVIEW
@@ -109,8 +109,24 @@ Implementation:
 - Cost: ~3-4 hours
 
 
-PHASE 4: POI / Tips Markers
+PHASE 4: POI / Tips Markers — DONE
 ---------------------------
+DONE. Storage decision: backend table (pois), not local — the open
+decision below was resolved in favor of backend because tips are meant
+to be read across accounts ("read other users' POIs"), unlike GPS
+tracks/photos which are local proof-of-your-own-hike data with no
+cross-account read requirement. Same shape as the existing `likes`
+table: user_id FK, public GET endpoint, each row annotated with
+is_mine (computed server-side from the session cookie) so the client
+never has to track its own numeric user id.
+
+User flow: Chris asked for BOTH options, not just the doc's recommended
+Option A. Shipped: (1) tap a point on the trail/track/map ->
+"Add a tip at this location" sheet, and (2) an "Add a tip at my
+location" button using the browser Geolocation API (not
+@capacitor/geolocation — the app is still a browser build, not yet
+wrapped in Capacitor). Both open the same AddPoiSheet.
+
 Task: Let users drop location-based tips on a hike
 
 Data model:
@@ -149,8 +165,8 @@ PHASING TIMELINE
 ----------------
 Phase 1: DONE (map rendering, OSM trail geometry, backend cache + matcher)
 Phase 2: DONE (GPS track upload, local storage on the log entry)
-Phase 3: NOT STARTED (photo EXIF geotagging) ← NEXT UP
-Phase 4: NOT STARTED (POI/tips markers)
+Phase 3: DONE (photo EXIF geotagging)
+Phase 4: DONE (POI/tips markers, backend-stored, both add-flows)
 
 (Original "verify Capacitor build on real phone" prerequisite was never
 formally checked off, but Phases 1-2 were built and browser-verified
@@ -227,11 +243,14 @@ Phase 3:
   ✓ Photo markers appear on map at correct location
   ✓ Fallback if photo has no EXIF (don't crash)
 
-Phase 4:
+Phase 4: (all verified via Puppeteer, 2026-07-28)
   ✓ Can tap on map and create POI
-  ✓ POI persists and reloads
-  ✓ Different marker types render differently
-  ✓ Can read other users' POIs (if shared)
+  ✓ Can also add via "Add a tip at my location" (browser Geolocation API)
+  ✓ POI persists and reloads (confirmed via direct SQLite query)
+  ✓ Different marker types render with distinct colors (warning/tip/landmark)
+  ✓ Can read other users' POIs — confirmed cross-account in an isolated
+    browser context, is_mine correctly false for a non-author, delete
+    button correctly hidden for non-authors and working for the author
 
 
 NICE-TO-HAVES (defer to later)
