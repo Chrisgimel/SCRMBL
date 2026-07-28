@@ -191,7 +191,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
               </div>
         )}
 
-        {tab === "Map" && <TrailMap hike={h} />}
+        {tab === "Map" && <TrailMap hike={h} userTrack={[...myEntries].reverse().find((l) => l.track)?.track} />}
       </div>
     </div>
   );

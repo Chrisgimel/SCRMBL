@@ -12,7 +12,7 @@ import Empty from "../ui/Empty";
    the only place in the app that imports leaflet or react-leaflet, and the
    only place that knows trail geometry is a separate fetch, not a field on
    the hike object itself. */
-function TrailMap({ hike }) {
+function TrailMap({ hike, userTrack }) {
   const [points, setPoints] = useState(null); // null = loading
 
   useEffect(() => {
@@ -32,17 +32,18 @@ function TrailMap({ hike }) {
   if (points === null) {
     return <Empty icon={MapPin} title="Loading map…" />;
   }
-  if (points.length < 2) {
+  const hasTrail = points.length >= 2;
+  const hasTrack = userTrack && userTrack.length >= 2;
+  if (!hasTrail && !hasTrack) {
     return <Empty icon={MapPin} title="No map yet" subtitle="This trail doesn't have route data plotted yet." />;
   }
 
-  const start = points[0];
-  const end = points[points.length - 1];
+  const bounds = hasTrail && hasTrack ? [...points, ...userTrack] : hasTrail ? points : userTrack;
 
   return (
     <div style={{ marginTop: 4, borderRadius: 14, overflow: "hidden", border: `1px solid ${THEME.hairline}` }}>
       <MapContainer
-        bounds={points}
+        bounds={bounds}
         boundsOptions={{ padding: [24, 24] }}
         style={{ height: 260, width: "100%" }}
         scrollWheelZoom={false}
@@ -51,17 +52,38 @@ function TrailMap({ hike }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {/* Casing: a wider dark outline under the route so it reads clearly
-            against the tile's own roads/paths, whatever color those are. */}
-        <Polyline positions={points}
-          pathOptions={{ color: THEME.slateDeep, weight: 8, opacity: 0.85, lineCap: "round", lineJoin: "round" }} />
-        <Polyline positions={points}
-          pathOptions={{ color: THEME.mintLight, weight: 4, lineCap: "round", lineJoin: "round" }} />
-        <CircleMarker center={start} radius={6}
-          pathOptions={{ color: THEME.slateDeep, weight: 2, fillColor: "#fff", fillOpacity: 1 }} />
-        <CircleMarker center={end} radius={7}
-          pathOptions={{ color: THEME.slateDeep, weight: 2, fillColor: THEME.mintLight, fillOpacity: 1 }} />
+        {hasTrail && (
+          <>
+            {/* Casing: a wider dark outline under the route so it reads clearly
+                against the tile's own roads/paths, whatever color those are. */}
+            <Polyline positions={points}
+              pathOptions={{ color: THEME.slateDeep, weight: 8, opacity: 0.85, lineCap: "round", lineJoin: "round" }} />
+            <Polyline positions={points}
+              pathOptions={{ color: THEME.mintLight, weight: 4, lineCap: "round", lineJoin: "round" }} />
+            <CircleMarker center={points[0]} radius={6}
+              pathOptions={{ color: THEME.slateDeep, weight: 2, fillColor: "#fff", fillOpacity: 1 }} />
+            <CircleMarker center={points[points.length - 1]} radius={7}
+              pathOptions={{ color: THEME.slateDeep, weight: 2, fillColor: THEME.mintLight, fillOpacity: 1 }} />
+          </>
+        )}
+        {hasTrack && (
+          <>
+            {/* Dashed and a different accent so a user's own GPS trace never
+                gets mistaken for the OSM-sourced trail line above. */}
+            <Polyline positions={userTrack}
+              pathOptions={{ color: THEME.sky, weight: 4, opacity: 0.95, dashArray: "6, 10", lineCap: "round", lineJoin: "round" }} />
+            <CircleMarker center={userTrack[0]} radius={5}
+              pathOptions={{ color: THEME.sky, weight: 2, fillColor: "#fff", fillOpacity: 1 }} />
+            <CircleMarker center={userTrack[userTrack.length - 1]} radius={6}
+              pathOptions={{ color: THEME.sky, weight: 2, fillColor: THEME.sky, fillOpacity: 1 }} />
+          </>
+        )}
       </MapContainer>
+      {hasTrail && hasTrack && (
+        <div style={{ color: THEME.textDim, fontSize: 10.5, padding: "6px 10px" }}>
+          — Trail &nbsp;·&nbsp; - - Your track
+        </div>
+      )}
     </div>
   );
 }

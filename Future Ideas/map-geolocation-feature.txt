@@ -1,6 +1,6 @@
 ================================================================================
 FEATURE: Trail Mapping with GPS Tracks, Photo Locations, and POIs
-Status: NOT YET STARTED (on hold until app is stable on real phone)
+Status: PHASE 1 + PHASE 2 DONE. Phase 3 (photo geotagging) not started.
 ================================================================================
 
 OVERVIEW
@@ -22,8 +22,16 @@ PREREQUISITES BEFORE STARTING
   (This shapes how tracks and POIs are stored/synced)
 
 
-PHASE 1: Map Rendering (foundation)
+PHASE 1: Map Rendering (foundation) — DONE
 ------------------------------------
+DONE, but grew past this section's original scope: shipped as Leaflet +
+backend-fetched/cached OSM geometry via an automated Overpass matcher
+(confidence high/medium/none), not a static bundled file. Also includes
+custom-hike location entry (Nominatim geocoding on CreateHikeSheet's Area
+field) so user-created routes are eligible for the same pipeline. See
+project memory "map-phase1-feature" for full history, bugs found/fixed,
+and known limitations (e.g. the still-open confidence-tier UI caption).
+
 Task: Get a map on screen with basic tile rendering
 
 Library choice:
@@ -47,8 +55,25 @@ Implementation:
 - Cost: ~6-8 hours
 
 
-PHASE 2: GPS Track Recording
+PHASE 2: GPS Track Recording — DONE (upload-only; live recording deferred)
 -----------------------------
+DONE as "upload an existing .gpx track", per this section's own recommendation.
+Storage decision made explicitly (see OPEN DECISIONS #1 below): kept local,
+on the log entry, same as photos — NOT a backend table. Reasoning: the whole
+hike-logging system (reviews/photos/gear/ratings) is still one local
+localStorage blob with no backend sync at all, so a tracks-only backend
+table would reference a log that's otherwise 100% local/device-bound — an
+orphaned split. Syncing all log data to a backend is a real future decision,
+but a bigger one than this phase, and deliberately not bundled in here.
+
+What shipped: `src/utils/gpx.js` (parses .gpx client-side via DOMParser,
+decimates to ~500 points), `src/components/TrackPicker.js` (upload/remove
+UI, mirrors PhotoPicker), a `track` field on the log entry, and TrailMap.js
+renders it as a dashed line alongside the OSM trail line (with a legend
+caption when both are present, and a track-only fallback when a hike has no
+OSM geometry at all, e.g. Chicago Basin). Live GPS recording during a hike
+(@capacitor/geolocation) is still deferred, as originally recommended below.
+
 Task: Record user's GPS location during/after a hike
 
 Capacitor plugin needed: @capacitor/geolocation
@@ -122,11 +147,14 @@ Cost: ~5-6 hours (Option A), +3-4 hours (add live GPS variant)
 
 PHASING TIMELINE
 ----------------
-Session N:   Verify Capacitor build on real phone ← YOU ARE HERE
-Session N+1: Phase 1 (map rendering, OSM trail geometry)
-Session N+2: Phase 2 (GPS track upload)
-Session N+3: Phase 3 (photo EXIF geotagging)
-Session N+4: Phase 4 (POI/tips markers)
+Phase 1: DONE (map rendering, OSM trail geometry, backend cache + matcher)
+Phase 2: DONE (GPS track upload, local storage on the log entry)
+Phase 3: NOT STARTED (photo EXIF geotagging) ← NEXT UP
+Phase 4: NOT STARTED (POI/tips markers)
+
+(Original "verify Capacitor build on real phone" prerequisite was never
+formally checked off, but Phases 1-2 were built and browser-verified
+anyway — Chris relaxed that gate in practice.)
 
 Total: ~18-28 hours depending on backend decisions
 

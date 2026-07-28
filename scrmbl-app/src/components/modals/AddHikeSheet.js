@@ -7,6 +7,7 @@ import Rating from "../ui/Rating";
 import Chip from "../ui/Chip";
 import RareChip from "../ui/RareChip";
 import PhotoPicker from "../PhotoPicker";
+import TrackPicker from "../TrackPicker";
 import { THEME, EFFORTS, TOP_CAP } from "../../constants";
 import { uid, allHikes, hikeById, fmtStats, ratingOut, isRareHike } from "../../utils/helpers";
 import { spotlightHike, totalKarmaForLogs, karmaLevel } from "../../utils/karma";
@@ -27,6 +28,7 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
   const [liked, setLiked] = useState(editing?.liked || false);
   const [date, setDate] = useState(editing?.date || new Date().toISOString().slice(0, 10));
   const [photos, setPhotos] = useState(editing?.photos || []);
+  const [track, setTrack] = useState(editing?.track || null);
   const [gear, setGear] = useState(editing?.gear || []);
   const [hours, setHours] = useState(editing?.time != null ? String(Math.floor(editing.time / 60)) : "");
   const [minutes, setMinutes] = useState(editing?.time != null ? String(editing.time % 60) : "");
@@ -52,7 +54,7 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
     const time = hours.trim() || minutes.trim() ? (Number(hours) || 0) * 60 + (Number(minutes) || 0) : null;
     const entry = {
       id: editing?.id || uid("l"), hikeId: picked.id, date, rating, effort,
-      review: review.trim(), liked, photos, gear, time,
+      review: review.trim(), liked, photos, gear, time, track,
     };
     /* Detect a level-up by comparing before/after against the logs this
        save is about to produce — cheap since it's the exact same derived
@@ -189,6 +191,9 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
 
           <label className="field-label">Photos</label>
           <PhotoPicker photos={photos} onChange={setPhotos} onError={(m) => toast(m, true)} />
+
+          <label className="field-label">GPS track (optional)</label>
+          <TrackPicker track={track} onChange={setTrack} onError={(m) => toast(m, true)} />
 
           <label className="field-label">What you wore</label>
           {state.gear.length === 0 ? (
