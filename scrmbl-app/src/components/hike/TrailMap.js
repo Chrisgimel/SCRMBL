@@ -5,7 +5,7 @@ import { MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { THEME } from "../../constants";
 import { POI_TYPE_BY_ID } from "../../constants/poiTypes";
-import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION } from "../../constants/mapTiles";
+import { TILE_URL, TILE_ATTRIBUTION } from "../../constants/mapTiles";
 import { getTrailGeometry } from "../../utils/api";
 import Empty from "../ui/Empty";
 
@@ -61,7 +61,7 @@ function TrailMap({ hike, userTrack, photoPins, onOpenPhoto, pois, onMapTap, onS
   ];
 
   return (
-    <div style={{ marginTop: 4, borderRadius: 14, overflow: "hidden", border: `1px solid ${THEME.hairline}` }}>
+    <div style={{ marginTop: 4, borderRadius: 14, overflow: "hidden", border: `1px solid ${THEME.hairline}`, position: "relative", zIndex: 1 }}>
       <MapContainer
         bounds={bounds}
         boundsOptions={{ padding: [24, 24], maxZoom: 15 }}
@@ -69,7 +69,7 @@ function TrailMap({ hike, userTrack, photoPins, onOpenPhoto, pois, onMapTap, onS
         scrollWheelZoom={false}
       >
         {onMapTap && <MapTapCapture onTap={onMapTap} />}
-        <TileLayer attribution={DARK_TILE_ATTRIBUTION} url={DARK_TILE_URL} />
+        <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
         {hasTrail && (
           <>
             {/* Casing: a wider dark outline under the route so it reads clearly

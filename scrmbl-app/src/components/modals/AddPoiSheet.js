@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "rea
 import "leaflet/dist/leaflet.css";
 import { Maximize2, Minimize2, Send, X } from "lucide-react";
 import { THEME } from "../../constants";
-import { DARK_TILE_URL } from "../../constants/mapTiles";
+import { TILE_URL } from "../../constants/mapTiles";
 
 /* Same click-capture trick as TrailMap's MapTapCapture — kept local here
    rather than shared, since this map's job (drag a single pin around to
@@ -70,7 +70,7 @@ function AddPoiSheet({ lat, lng, onSubmit, onClose }) {
             <MapContainer center={[pos.lat, pos.lng]} zoom={15} zoomControl={false}
               dragging={mapOpen} scrollWheelZoom={false} doubleClickZoom={false} touchZoom={mapOpen} attributionControl={false}
               style={{ width: "100%", height: "100%" }}>
-              <TileLayer url={DARK_TILE_URL} />
+              <TileLayer url={TILE_URL} />
               <InvalidateOnResize watch={mapOpen} />
               {mapOpen && <MapTapCapture onTap={(la, ln) => setPos({ lat: la, lng: ln })} />}
               <CircleMarker center={[pos.lat, pos.lng]} radius={7}
