@@ -9,7 +9,7 @@ import ReviewCard from "../components/hike/ReviewCard";
 import RareBadge from "../components/ui/RareBadge";
 import KarmaBadge from "../components/ui/KarmaBadge";
 
-import { COMMUNITY_LOGS, COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
+import { COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
 import { fmtStats, hikeById, isRareHike } from "../utils/helpers";
 import { spotlightHike, totalKarmaForLogs } from "../utils/karma";
 import * as api from "../utils/api";
@@ -33,7 +33,7 @@ function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isL
 
   if (!u) return <Empty title="Hiker not found" />;
   const following = state.following.includes(handle);
-  const logs = COMMUNITY_LOGS.filter((l) => l.handle === handle).sort((a, b) => b.date.localeCompare(a.date));
+  const logs = (state.communityLogs || []).filter((l) => l.handle === handle).sort((a, b) => b.date.localeCompare(a.date));
   const top = COMMUNITY_TOP[handle] || [];
   const vert = logs.reduce((a, l) => a + (hikeById(state, l.hikeId)?.gain || 0), 0);
   const karma = totalKarmaForLogs(logs, state, spotlightHike(state)?.id);

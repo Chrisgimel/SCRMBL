@@ -3,6 +3,7 @@ import { Layers, Plus, Shirt, ShoppingCart } from "lucide-react";
 import { useBucklist } from "./hooks/useBucklist";
 import { useLikes } from "./hooks/useLikes";
 import { useGear } from "./hooks/useGear";
+import { useLogs } from "./hooks/useLogs";
 import * as api from "./utils/api";
 import Logo from "./components/ui/Logo";
 
@@ -71,12 +72,33 @@ export default function App() {
   // Backend-synced gear + kits
   const { saveGear, removeGear, toggleFeature, saveKit, removeKit } = useGear(state.signedIn, state.gear, state.kits, setState);
 
+  // Backend-synced logs + custom hikes
+  const { saveLog, removeLog, saveCustomHike } = useLogs(state.signedIn, state.logs, state.customHikes, state.isDemo, setState);
+
   // Sync bucklist from hook to state for existing components
   useEffect(() => {
     if (state.signedIn) {
       setState(s => ({ ...s, bucket: bucklist }));
     }
   }, [bucklist, state.signedIn]);
+
+  /* Other hikers' entries, which the feed, Discover's trending math, trail
+     pages and profiles all read. Public and unauthenticated, so it loads at
+     startup rather than on sign-in — and again on sign-in, since the endpoint
+     leaves out your own entries (the client already has those in state.logs)
+     and which ones those are depends on who you are. */
+  useEffect(() => {
+    let cancelled = false;
+
+    api.getCommunityLogs()
+      .then(({ logs, customHikes }) => {
+        if (cancelled) return;
+        setState(s => ({ ...s, communityLogs: logs, communityHikes: customHikes }));
+      })
+      .catch(err => console.error('Failed to load community logs:', err));
+
+    return () => { cancelled = true; };
+  }, [state.signedIn]);
 
   const toast = useCallback((text, bad = false) => {
     clearTimeout(toastTimer.current);
@@ -200,6 +222,7 @@ export default function App() {
                     openThread={openThread} openInbox={openInbox} openUser={openUser} sellDraft={sellDraft}
                     clearSellDraft={() => setSellDraft(null)} toast={toast} />}
                   {tab === "profile" && <ProfileScreen state={state} setState={setState} openHike={openHike}
+                    removeLog={removeLog}
                     openUser={openUser} openSettings={() => setSettings(true)} onLog={openLog}
                     toggleBucklist={toggleBucklist} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} toast={toast}
                     openBucketlistBrowser={() => setBrowsingBucketlist(true)} />}
@@ -259,6 +282,7 @@ export default function App() {
         )}
         {adding && (
           <AddHikeSheet state={state} setState={setState} presetHikeId={adding.hikeId} editLogId={adding.logId}
+            saveLog={saveLog} saveCustomHike={saveCustomHike}
             toast={toast} onLogged={(r) => { setLogged(r); if (r.leveledUpTo) announceLevelUp(r.leveledUpTo); }} onClose={() => setAdding(null)} />
         )}
         {logged && (

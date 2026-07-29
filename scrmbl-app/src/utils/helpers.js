@@ -1,6 +1,7 @@
 // Extracted from App.js.
 import { Award, Flag, Mountain, Sparkles, TrendingUp } from "lucide-react";
-import { THEME, SEED_HIKES, COMMUNITY_LOGS, COMMUNITY_TOP } from "../constants";
+import { THEME, SEED_HIKES, COMMUNITY_TOP } from "../constants";
+import { API_ORIGIN } from "./api";
 
 /* ---------------- helpers ---------------- */
 export const POSTER_PALETTES = [
@@ -21,10 +22,22 @@ export const uid = (p = "x") => `${p}${Date.now().toString(36)}${Math.random().t
    every entry logged before Phase 3 geotagging). PhotoPicker now emits
    {src, lat, lng} for newly-added photos so a pin can be placed on the
    map — these two helpers let every render site accept either shape. */
-export const photoSrc = (p) => (typeof p === "string" ? p : p.src);
+/* Uploaded photos are stored as a server-relative path ("/uploads/x.jpg") so
+   the value stays portable if the backend ever moves. The app is served from
+   a different port than the API, so resolve it against the API origin here
+   rather than letting the browser resolve it against the frontend. */
+export const photoSrc = (p) => {
+  const src = typeof p === "string" ? p : p?.src;
+  return src && src.startsWith("/uploads/") ? `${API_ORIGIN}${src}` : src;
+};
 export const photoGeo = (p) => (p && typeof p === "object" && p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null);
 
-export function allHikes(state) { return [...SEED_HIKES, ...state.customHikes]; }
+/* Community custom routes are included so a community log's hikeId still
+   resolves to a hike — otherwise someone else's custom route reads as a
+   missing hike on their profile and in the feed. */
+export function allHikes(state) {
+  return [...SEED_HIKES, ...(state.customHikes || []), ...(state.communityHikes || [])];
+}
 export function hikeById(state, id) { return allHikes(state).find((h) => h.id === id); }
 
 /* "This week" anchors to the newest community log date rather than the
@@ -32,8 +45,8 @@ export function hikeById(state, id) { return allHikes(state).find((h) => h.id ==
    wall-clock "now" would always show an empty week. Shared by Discover's
    "Popular this week" and the Spotlight rotation so both move together. */
 export const DAY = 24 * 60 * 60 * 1000;
-export function weekAnchor() {
-  const times = COMMUNITY_LOGS.map((l) => new Date(`${l.date}T00:00:00`).getTime());
+export function weekAnchor(communityLogs = []) {
+  const times = communityLogs.map((l) => new Date(`${l.date}T00:00:00`).getTime());
   return times.length ? Math.max(...times) : Date.now();
 }
 export const hasStats = (h) => !!h && h.gain != null && h.mi != null;
@@ -48,7 +61,7 @@ export const fmtDate = (d) => {
 /* Everyone's entries for a hike — yours and the community's, one shape. */
 export function entriesFor(state, hikeId) {
   const mine = state.logs.filter((l) => l.hikeId === hikeId).map((l) => ({ ...l, handle: "you", mine: true }));
-  const theirs = COMMUNITY_LOGS.filter((l) => l.hikeId === hikeId).map((l) => ({ ...l, mine: false }));
+  const theirs = (state.communityLogs || []).filter((l) => l.hikeId === hikeId).map((l) => ({ ...l, mine: false }));
   return [...mine, ...theirs].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 }
 export function aggregate(state, hikeId) {
@@ -65,7 +78,7 @@ export function rankedBy(hikeId) {
 }
 /* Rarity: how many distinct people have logged it at all. (plan 4 — skill/niche) */
 export function rarityOf(state, hikeId) {
-  const hikers = new Set(COMMUNITY_LOGS.filter((l) => l.hikeId === hikeId).map((l) => l.handle));
+  const hikers = new Set((state.communityLogs || []).filter((l) => l.hikeId === hikeId).map((l) => l.handle));
   const n = hikers.size;
   if (n === 0) return { level: "unlogged", label: "Nobody's logged this", n };
   if (n === 1) return { level: "rare", label: "Only 1 scrmblr has logged this", n };

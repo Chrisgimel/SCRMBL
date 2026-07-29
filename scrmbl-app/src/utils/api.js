@@ -1,5 +1,6 @@
 // API service for SCRMBL backend
-const API_BASE = 'http://localhost:3001/api';
+export const API_ORIGIN = 'http://localhost:3001';
+const API_BASE = `${API_ORIGIN}/api`;
 
 // Helper function to make API calls with credentials (cookies)
 async function apiCall(endpoint, options = {}) {
@@ -161,6 +162,67 @@ export async function updateKit(id, kit) {
 
 export async function deleteKit(id) {
   return apiCall(`/kits/${id}`, { method: 'DELETE' });
+}
+
+// ============================================
+// PHOTO API
+// ============================================
+
+// Trades a base64 data URI for a hosted URL. Passes non-data URLs straight
+// back, so calling this on an already-uploaded photo is a no-op.
+export async function uploadPhoto(dataUrl) {
+  return apiCall('/photos', {
+    method: 'POST',
+    body: JSON.stringify({ dataUrl }),
+  });
+}
+
+// ============================================
+// LOGS API
+// ============================================
+
+export async function getLogs() {
+  return apiCall('/logs');
+}
+
+export async function saveLog(entry) {
+  return apiCall('/logs', {
+    method: 'POST',
+    body: JSON.stringify(entry),
+  });
+}
+
+export async function deleteLog(logId) {
+  return apiCall(`/logs/${logId}`, { method: 'DELETE' });
+}
+
+export async function getUserLogs(handle) {
+  return apiCall(`/users/${handle}/logs`);
+}
+
+// Everyone else's entries — the feed, trending math and trail pages read
+// this. Excludes your own logs, which the client already holds.
+export async function getCommunityLogs() {
+  return apiCall('/community/logs');
+}
+
+// ============================================
+// CUSTOM HIKES API
+// ============================================
+
+export async function getCustomHikes() {
+  return apiCall('/custom-hikes');
+}
+
+export async function saveCustomHike(hike) {
+  return apiCall('/custom-hikes', {
+    method: 'POST',
+    body: JSON.stringify(hike),
+  });
+}
+
+export async function deleteCustomHike(hikeId) {
+  return apiCall(`/custom-hikes/${hikeId}`, { method: 'DELETE' });
 }
 
 // ============================================

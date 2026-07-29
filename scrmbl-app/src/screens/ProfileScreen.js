@@ -14,7 +14,7 @@ import { THEME, TOP_CAP, USER_BY_HANDLE } from "../constants";
 import { achievements, allHikes, fmtStats, hikeById, isRareHike, userAchievements } from "../utils/helpers";
 import { spotlightHike, totalKarma } from "../utils/karma";
 
-function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser }) {
+function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser, removeLog }) {
   const [tab, setTab] = useState("Top Hikes");
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersTab, setFollowersTab] = useState("Followers");
@@ -174,7 +174,7 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
                       <button className="ghost-btn" style={{ fontSize: 12 }} onClick={() => onLog(l.hikeId, l.id)}>Edit</button>
                       <button className="ghost-btn" style={{ fontSize: 12 }} onClick={() => openHike(l.hikeId)}>Trail page</button>
                       <button className="ghost-btn" style={{ fontSize: 12, color: "#E8A0A0", marginLeft: "auto" }}
-                        onClick={() => setState((s) => ({ ...s, logs: s.logs.filter((x) => x.id !== l.id) }))}>Delete entry</button>
+                        onClick={() => removeLog(l.id)}>Delete entry</button>
                     </div>
                   </div>
                 ))}

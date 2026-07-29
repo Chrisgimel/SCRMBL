@@ -14,7 +14,7 @@ import { spotlightHike, totalKarmaForLogs, karmaLevel } from "../../utils/karma"
 
 /* Many entries per hike, photos, the gear you wore, and real stats
    on custom routes. (plan 1.2 / 1.4 / 3.2 / 3.3) */
-function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast, onLogged }) {
+function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast, onLogged, saveLog, saveCustomHike }) {
   const editing = editLogId ? state.logs.find((l) => l.id === editLogId) : null;
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState(() => {
@@ -68,11 +68,13 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
       const after = karmaLevel(totalKarmaForLogs([...state.logs, entry], state, spotlightId));
       if (after.level > before.level) leveledUpTo = after;
     }
+    /* The entry itself goes through the hook (optimistic write, photo
+       upload, backend sync); top and bucket stay local state. */
+    saveLog(entry);
     setState((s) => {
-      const logs = editing ? s.logs.map((l) => (l.id === entry.id ? entry : l)) : [...s.logs, entry];
       let top = s.top.filter((id) => id !== picked.id);
       if (pinTop) top = [...s.top.filter((id) => id !== picked.id), picked.id].slice(0, TOP_CAP);
-      return { ...s, logs, top, bucket: s.bucket.filter((b) => b !== picked.id) };
+      return { ...s, top, bucket: s.bucket.filter((b) => b !== picked.id) };
     });
     onClose();
     if (editing) toast("Entry updated");
@@ -81,7 +83,7 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
 
   if (creating) {
     return <CreateHikeSheet name={creating.name} onClose={() => setCreating(null)}
-      onCreate={(h) => { setState((s) => ({ ...s, customHikes: [...s.customHikes, h] })); setPicked(h); setCreating(null); }} />;
+      onCreate={(h) => { saveCustomHike(h); setPicked(h); setCreating(null); }} />;
   }
 
   return (

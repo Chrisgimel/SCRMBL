@@ -3,3 +3,6 @@ db/*.db
 db/*.db-journal
 .env
 *.log
+
+# User-uploaded hike photos — real content, not source
+uploads/

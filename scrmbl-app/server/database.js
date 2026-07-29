@@ -126,6 +126,68 @@ function initializeDatabase() {
       }
     });
 
+    // Custom hikes table — routes a user created themselves, which seeded
+    // hikes (SEED_HIKES) don't cover. hike_id is the client-generated string
+    // id (uid("c")), kept as-is rather than swapped for an autoincrement:
+    // logs reference hikes by that string, and seeded hikes use string ids
+    // like "bierstadt" too, so both kinds stay interchangeable.
+    db.run(`
+      CREATE TABLE IF NOT EXISTS custom_hikes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        hike_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        area TEXT,
+        mi REAL,
+        gain REAL,
+        summit REAL,
+        klass INTEGER,
+        hue INTEGER,
+        location TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(user_id, hike_id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating custom_hikes table:', err);
+      } else {
+        console.log('Custom hikes table ready');
+      }
+    });
+
+    // Logs table — the hike diary, the core of the app. log_id is the
+    // client-generated uid("l") string, preserved because likes.review_id
+    // already points at it; renumbering would orphan every existing like.
+    // photos/gear/track are JSON text. photos holds uploaded URLs (see
+    // /api/photos), not the base64 data URIs the picker produces.
+    db.run(`
+      CREATE TABLE IF NOT EXISTS logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        log_id TEXT NOT NULL,
+        hike_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        rating INTEGER,
+        effort TEXT,
+        review TEXT,
+        liked INTEGER DEFAULT 0,
+        time INTEGER,
+        photos TEXT NOT NULL DEFAULT '[]',
+        gear TEXT NOT NULL DEFAULT '[]',
+        track TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(user_id, log_id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating logs table:', err);
+      } else {
+        console.log('Logs table ready');
+      }
+    });
+
     // Trail geometry table — cached real-world route data per trail, fetched
     // from OpenStreetMap on first view and reused for every user after that.
     // points is JSON-encoded [[lat,lon],...]; '[]' means a confirmed no-match

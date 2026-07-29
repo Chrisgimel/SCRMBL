@@ -1,4 +1,7 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const cors = require('cors');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
@@ -13,7 +16,17 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
-app.use(express.json());
+// Photos arrive as base64 data URIs in the JSON body, which blows past the
+// default 100kb limit — /api/photos writes them to disk so they don't end up
+// inline in a log row.
+app.use(express.json({ limit: '12mb' }));
+
+// Uploaded photos are served straight off disk
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(cookieParser());
 app.use(session({
   secret: 'scrmbl-dev-secret-key-change-in-production',
@@ -563,6 +576,306 @@ app.get('/api/users/:handle/gear', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user gear:', error);
     res.status(500).json({ error: 'Failed to fetch user gear' });
+  }
+});
+
+// ============================================
+// PHOTO UPLOAD
+// ============================================
+
+const PHOTO_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
+// Accepts the base64 data URI the photo picker produces, writes it to disk,
+// and hands back a URL. Keeps multi-megabyte blobs out of the logs table and
+// off every subsequent sync.
+app.post('/api/photos', requireAuth, async (req, res) => {
+  try {
+    const { dataUrl } = req.body;
+
+    if (typeof dataUrl !== 'string') {
+      return res.status(400).json({ error: 'dataUrl is required' });
+    }
+
+    // Already an uploaded URL (or a remote seed image)? Nothing to do.
+    if (!dataUrl.startsWith('data:')) {
+      return res.json({ url: dataUrl });
+    }
+
+    const match = /^data:([^;,]+);base64,(.+)$/s.exec(dataUrl);
+    if (!match) {
+      return res.status(400).json({ error: 'Malformed data URI' });
+    }
+
+    const ext = PHOTO_TYPES[match[1].toLowerCase()];
+    if (!ext) {
+      return res.status(415).json({ error: `Unsupported image type: ${match[1]}` });
+    }
+
+    const buffer = Buffer.from(match[2], 'base64');
+    const filename = `${crypto.randomUUID()}.${ext}`;
+    await fs.promises.writeFile(path.join(UPLOADS_DIR, filename), buffer);
+
+    res.json({ url: `/uploads/${filename}` });
+  } catch (error) {
+    console.error('Error uploading photo:', error);
+    res.status(500).json({ error: 'Failed to upload photo' });
+  }
+});
+
+// ============================================
+// CUSTOM HIKE ROUTES
+// ============================================
+
+function toCustomHike(row) {
+  let location = null;
+  try {
+    location = row.location ? JSON.parse(row.location) : null;
+  } catch (e) {
+    console.error('Malformed location on custom hike', row.hike_id);
+  }
+
+  return {
+    id: row.hike_id,
+    name: row.name,
+    area: row.area,
+    mi: row.mi,
+    gain: row.gain,
+    summit: row.summit,
+    klass: row.klass,
+    hue: row.hue,
+    custom: true,
+    ...(location ? { location } : {}),
+  };
+}
+
+app.get('/api/custom-hikes', requireAuth, async (req, res) => {
+  try {
+    const rows = await allQuery(
+      'SELECT * FROM custom_hikes WHERE user_id = ? ORDER BY created_at ASC',
+      [req.session.userId]
+    );
+    res.json(rows.map(toCustomHike));
+  } catch (error) {
+    console.error('Error fetching custom hikes:', error);
+    res.status(500).json({ error: 'Failed to fetch custom hikes' });
+  }
+});
+
+app.post('/api/custom-hikes', requireAuth, async (req, res) => {
+  try {
+    const { id, name, area, mi, gain, summit, klass, hue, location } = req.body;
+
+    if (!id || !name) {
+      return res.status(400).json({ error: 'id and name are required' });
+    }
+
+    // Idempotent on (user_id, hike_id) so a retry can't duplicate a route.
+    await runQuery(
+      `INSERT INTO custom_hikes (user_id, hike_id, name, area, mi, gain, summit, klass, hue, location)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, hike_id) DO UPDATE SET
+         name = excluded.name, area = excluded.area, mi = excluded.mi,
+         gain = excluded.gain, summit = excluded.summit, klass = excluded.klass,
+         hue = excluded.hue, location = excluded.location`,
+      [
+        req.session.userId, id, name, area || null,
+        mi ?? null, gain ?? null, summit ?? null, klass ?? null, hue ?? null,
+        location ? JSON.stringify(location) : null,
+      ]
+    );
+
+    const row = await getQuery(
+      'SELECT * FROM custom_hikes WHERE user_id = ? AND hike_id = ?',
+      [req.session.userId, id]
+    );
+    res.json(toCustomHike(row));
+  } catch (error) {
+    console.error('Error saving custom hike:', error);
+    res.status(500).json({ error: 'Failed to save custom hike' });
+  }
+});
+
+app.delete('/api/custom-hikes/:hike_id', requireAuth, async (req, res) => {
+  try {
+    const result = await runQuery(
+      'DELETE FROM custom_hikes WHERE hike_id = ? AND user_id = ?',
+      [req.params.hike_id, req.session.userId]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Custom hike not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting custom hike:', error);
+    res.status(500).json({ error: 'Failed to delete custom hike' });
+  }
+});
+
+// ============================================
+// LOG ROUTES
+// ============================================
+
+function jsonOr(raw, fallback, label, id) {
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
+  } catch (e) {
+    console.error(`Malformed ${label} on log`, id);
+    return fallback;
+  }
+}
+
+function toLog(row) {
+  return {
+    id: row.log_id,
+    hikeId: row.hike_id,
+    date: row.date,
+    rating: row.rating,
+    effort: row.effort,
+    review: row.review,
+    liked: !!row.liked,
+    time: row.time,
+    photos: jsonOr(row.photos, [], 'photos', row.log_id),
+    gear: jsonOr(row.gear, [], 'gear', row.log_id),
+    track: row.track ? jsonOr(row.track, null, 'track', row.log_id) : null,
+  };
+}
+
+// Get signed-in user's logs
+app.get('/api/logs', requireAuth, async (req, res) => {
+  try {
+    const rows = await allQuery(
+      'SELECT * FROM logs WHERE user_id = ? ORDER BY date DESC',
+      [req.session.userId]
+    );
+    res.json(rows.map(toLog));
+  } catch (error) {
+    console.error('Error fetching logs:', error);
+    res.status(500).json({ error: 'Failed to fetch logs' });
+  }
+});
+
+// Create or update a log. Upsert on (user_id, log_id) so the client keeps
+// owning the id — likes.review_id points at it, so it must not change.
+app.post('/api/logs', requireAuth, async (req, res) => {
+  try {
+    const { id, hikeId, date, rating, effort, review, liked, time, photos, gear, track } = req.body;
+
+    if (!id || !hikeId || !date) {
+      return res.status(400).json({ error: 'id, hikeId and date are required' });
+    }
+
+    await runQuery(
+      `INSERT INTO logs (user_id, log_id, hike_id, date, rating, effort, review, liked, time, photos, gear, track)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, log_id) DO UPDATE SET
+         hike_id = excluded.hike_id, date = excluded.date, rating = excluded.rating,
+         effort = excluded.effort, review = excluded.review, liked = excluded.liked,
+         time = excluded.time, photos = excluded.photos, gear = excluded.gear,
+         track = excluded.track`,
+      [
+        req.session.userId, id, hikeId, date,
+        rating ?? null, effort || null, review || null, liked ? 1 : 0, time ?? null,
+        JSON.stringify(photos || []), JSON.stringify(gear || []),
+        track ? JSON.stringify(track) : null,
+      ]
+    );
+
+    const row = await getQuery(
+      'SELECT * FROM logs WHERE user_id = ? AND log_id = ?',
+      [req.session.userId, id]
+    );
+    res.json(toLog(row));
+  } catch (error) {
+    console.error('Error saving log:', error);
+    res.status(500).json({ error: 'Failed to save log' });
+  }
+});
+
+// Delete a log
+app.delete('/api/logs/:log_id', requireAuth, async (req, res) => {
+  try {
+    const result = await runQuery(
+      'DELETE FROM logs WHERE log_id = ? AND user_id = ?',
+      [req.params.log_id, req.session.userId]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Log not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting log:', error);
+    res.status(500).json({ error: 'Failed to delete log' });
+  }
+});
+
+// The community diary: every user's logs with the author's handle attached,
+// plus the custom hikes they reference so a viewer can resolve every hikeId.
+// Public and unauthenticated — this is what the feed, Discover's trending
+// math and trail pages read, and it replaced the COMMUNITY_LOGS constant.
+app.get('/api/community/logs', async (req, res) => {
+  try {
+    // Your own entries are excluded: the client already holds them in
+    // state.logs and merges the two lists (see entriesFor), so including
+    // them here would show every one of your hikes twice.
+    const viewerId = req.session.userId || null;
+
+    const [logRows, hikeRows] = await Promise.all([
+      allQuery(`
+        SELECT logs.*, users.handle AS handle
+        FROM logs
+        JOIN users ON users.id = logs.user_id
+        WHERE users.handle IS NOT NULL AND logs.user_id IS NOT ?
+        ORDER BY logs.date DESC
+        LIMIT 500
+      `, [viewerId]),
+      allQuery('SELECT * FROM custom_hikes WHERE user_id IS NOT ?', [viewerId]),
+    ]);
+
+    res.json({
+      logs: logRows.map((row) => ({ ...toLog(row), handle: row.handle })),
+      customHikes: hikeRows.map(toCustomHike),
+    });
+  } catch (error) {
+    console.error('Error fetching community logs:', error);
+    res.status(500).json({ error: 'Failed to fetch community logs' });
+  }
+});
+
+// Get a user's logs by handle (read-only public endpoint), alongside the
+// custom hikes those logs reference so a viewer can resolve every hikeId.
+app.get('/api/users/:handle/logs', async (req, res) => {
+  try {
+    const user = await getQuery(
+      'SELECT id FROM users WHERE LOWER(handle) = LOWER(?)',
+      [req.params.handle]
+    );
+
+    if (!user) {
+      return res.json({ logs: [], customHikes: [] });
+    }
+
+    const [logRows, hikeRows] = await Promise.all([
+      allQuery('SELECT * FROM logs WHERE user_id = ? ORDER BY date DESC', [user.id]),
+      allQuery('SELECT * FROM custom_hikes WHERE user_id = ?', [user.id]),
+    ]);
+
+    res.json({
+      logs: logRows.map(toLog),
+      customHikes: hikeRows.map(toCustomHike),
+    });
+  } catch (error) {
+    console.error('Error fetching user logs:', error);
+    res.status(500).json({ error: 'Failed to fetch user logs' });
   }
 });
 

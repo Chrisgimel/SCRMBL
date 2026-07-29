@@ -4,22 +4,22 @@ import HikePoster from "../../components/hike/HikePoster";
 import SpotlightCard from "../../components/hike/SpotlightCard";
 import Avatar from "../../components/ui/Avatar";
 import Empty from "../../components/ui/Empty";
-import { THEME, SEED_USERS, COMMUNITY_LOGS } from "../../constants";
+import { THEME, SEED_USERS } from "../../constants";
 import { allHikes, isRareHike, fmtStats, weekAnchor, DAY } from "../../utils/helpers";
 import { spotlightHike, karmaForEntry } from "../../utils/karma";
 
 /* "This week" is anchored to the newest community log date rather than the
    real clock — seed data is a fixed historical window, so anchoring to
    wall-clock "now" would always show an empty week. */
-function weeklyCounts() {
-  const anchor = weekAnchor();
+function weeklyCounts(communityLogs) {
+  const anchor = weekAnchor(communityLogs);
   const weekStart = anchor - 6 * DAY;
   const prevWeekStart = weekStart - 7 * DAY;
   const prevWeekEnd = weekStart - DAY;
 
   const thisWeek = {};
   const lastWeek = {};
-  COMMUNITY_LOGS.forEach((l) => {
+  communityLogs.forEach((l) => {
     const t = new Date(`${l.date}T00:00:00`).getTime();
     if (t >= weekStart && t <= anchor) thisWeek[l.hikeId] = (thisWeek[l.hikeId] || 0) + 1;
     if (t >= prevWeekStart && t <= prevWeekEnd) lastWeek[l.hikeId] = (lastWeek[l.hikeId] || 0) + 1;
@@ -47,9 +47,10 @@ function DiscoverTab({ state, openHike, openUser }) {
   const nearYou = [...withTripMiles].sort((a, b) => a.tripMiles - b.tripMiles).slice(0, 9);
   const farOut = [...withTripMiles].sort((a, b) => b.tripMiles - a.tripMiles).slice(0, 9);
 
-  const { thisWeek, lastWeek } = weeklyCounts();
+  const communityLogs = state.communityLogs || [];
+  const { thisWeek, lastWeek } = weeklyCounts(communityLogs);
   const totalLogCount = {};
-  COMMUNITY_LOGS.forEach((l) => { totalLogCount[l.hikeId] = (totalLogCount[l.hikeId] || 0) + 1; });
+  communityLogs.forEach((l) => { totalLogCount[l.hikeId] = (totalLogCount[l.hikeId] || 0) + 1; });
 
   const popularThisWeek = [...hikes]
     .sort((a, b) => ((thisWeek[b.id] || 0) - (thisWeek[a.id] || 0)) || ((totalLogCount[b.id] || 0) - (totalLogCount[a.id] || 0)))

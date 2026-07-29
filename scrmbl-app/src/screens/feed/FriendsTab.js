@@ -3,7 +3,7 @@ import { UserPlus, Users } from "lucide-react";
 import Avatar from "../../components/ui/Avatar";
 import Empty from "../../components/ui/Empty";
 import ReviewCard from "../../components/hike/ReviewCard";
-import { THEME, SEED_USERS, COMMUNITY_LOGS } from "../../constants";
+import { THEME, SEED_USERS } from "../../constants";
 import { hikeById } from "../../utils/helpers";
 
 /* Built from the follow graph and real entries — no literal activity strings. */
@@ -13,10 +13,10 @@ function FriendsTab({ state, setState, openHike, openUser, toggleLike, isLiked, 
     following: s.following.includes(handle) ? s.following.filter((h) => h !== handle) : [...s.following, handle],
   }));
 
-  const feed = useMemo(() => COMMUNITY_LOGS
+  const feed = useMemo(() => (state.communityLogs || [])
     .filter((l) => state.following.includes(l.handle))
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 20), [state.following]);
+    .slice(0, 20), [state.following, state.communityLogs]);
 
   const suggestions = SEED_USERS.filter((u) => !state.following.includes(u.handle));
 

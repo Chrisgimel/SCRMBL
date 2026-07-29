@@ -22,7 +22,7 @@ export function spotlightEligible(state) {
 export function spotlightHike(state) {
   const eligible = spotlightEligible(state);
   if (!eligible.length) return null;
-  const weekIndex = Math.floor(weekAnchor() / (7 * DAY));
+  const weekIndex = Math.floor(weekAnchor(state.communityLogs) / (7 * DAY));
   return eligible[weekIndex % eligible.length];
 }
 
@@ -34,7 +34,7 @@ export function karmaForEntry(hike, spotlightId) {
 }
 
 /* Generalized over an arbitrary log list so it works for "you" (state.logs)
-   and for any community handle (a filtered slice of COMMUNITY_LOGS) alike —
+   and for any community handle (a filtered slice of state.communityLogs) alike —
    karma has to be publicly computable for other users' profiles too. */
 export function karmaForLogs(logs, state, spotlightId) {
   return logs.reduce((sum, l) => sum + karmaForEntry(hikeById(state, l.hikeId), spotlightId), 0);
