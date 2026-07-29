@@ -20,6 +20,7 @@ function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
+        handle TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `, (err) => {
@@ -28,6 +29,17 @@ function initializeDatabase() {
       } else {
         console.log('Users table ready');
       }
+    });
+
+    // Migration: `handle` is newer than the users table. SQLite can't add a
+    // UNIQUE column via ALTER, so the column goes on plain and uniqueness
+    // comes from an index created after existing rows are backfilled.
+    db.run('ALTER TABLE users ADD COLUMN handle TEXT', (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error('Error adding users.handle column:', err);
+        return;
+      }
+      backfillHandles();
     });
 
     // Bucklist table
@@ -162,6 +174,56 @@ function initializeDatabase() {
   });
 }
 
+// Turn a display name (or email) into a handle: "Rachel P." -> "rachelp".
+// Community handles like "talus.tom" keep dots and underscores, so those are
+// preserved when a name already contains them.
+function slugifyHandle(name, email) {
+  // Trailing separators are stripped so "Rachel P." lands on "rachelp",
+  // not "rachelp."
+  const clean = (raw) => (raw || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9._]/g, '')
+    .replace(/^[._]+|[._]+$/g, '');
+
+  return clean(name) || clean((email || '').split('@')[0]) || 'hiker';
+}
+
+// Find a free handle, suffixing a number on collision: rachelp, rachelp2, ...
+async function uniqueHandle(base, excludeUserId = null) {
+  let candidate = base;
+  let n = 1;
+
+  for (;;) {
+    const clash = await getQuery(
+      'SELECT id FROM users WHERE LOWER(handle) = LOWER(?) AND id IS NOT ?',
+      [candidate, excludeUserId]
+    );
+    if (!clash) return candidate;
+    n += 1;
+    candidate = `${base}${n}`;
+  }
+}
+
+// Give every pre-existing user a handle, then enforce uniqueness. Runs on
+// every boot but only touches rows where handle IS NULL, so it is a no-op
+// once the backfill has happened.
+async function backfillHandles() {
+  try {
+    const pending = await allQuery('SELECT id, name, email FROM users WHERE handle IS NULL');
+
+    for (const user of pending) {
+      const handle = await uniqueHandle(slugifyHandle(user.name, user.email), user.id);
+      await runQuery('UPDATE users SET handle = ? WHERE id = ?', [handle, user.id]);
+      console.log(`Assigned handle @${handle} to user ${user.id}`);
+    }
+
+    await runQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle ON users(handle)');
+    console.log('User handles ready');
+  } catch (err) {
+    console.error('Error backfilling user handles:', err);
+  }
+}
+
 // Helper function to run queries with promises
 function runQuery(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -206,5 +268,7 @@ module.exports = {
   initializeDatabase,
   runQuery,
   getQuery,
-  allQuery
+  allQuery,
+  slugifyHandle,
+  uniqueHandle
 };

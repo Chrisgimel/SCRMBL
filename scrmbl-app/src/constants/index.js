@@ -193,39 +193,6 @@ export const COMMUNITY_TOP = {
   "basin.bri": ["chicago", "icelakes", "bluelakes"],
 };
 
-/* Gear each community member has */
-export const COMMUNITY_GEAR = {
-  ridgelinerachel: [
-    { id: "rr1", slot: "shell", name: "Alpha FL Jacket", brand: "Arc'teryx", price: 699, featured: true },
-    { id: "rr2", slot: "pack", name: "Kestrel 48", brand: "Osprey", price: 220, featured: true },
-    { id: "rr3", slot: "boots", name: "Teton 3 GTX", brand: "Merrell", price: 180, featured: true },
-    { id: "rr4", slot: "base", name: "Merino 150 Baselayer", brand: "Smartwool", price: 80, featured: false },
-  ],
-  "talus.tom": [
-    { id: "tt1", slot: "shell", name: "Outdoor Research Triolet", brand: "Outdoor Research", price: 449, featured: true },
-    { id: "tt2", slot: "pack", name: "Deuter Aircontact 65+10", brand: "Deuter", price: 280, featured: true },
-    { id: "tt3", slot: "boots", name: "Scarpa Mont Blanc Pro GTX", brand: "Scarpa", price: 320, featured: true },
-    { id: "tt4", slot: "poles", name: "UL Flight Trek", brand: "Black Diamond", price: 130, featured: false },
-  ],
-  cairn_queen: [
-    { id: "cq1", slot: "shell", name: "Storm10 Jacket", brand: "The North Face", price: 399, featured: true },
-    { id: "cq2", slot: "pack", name: "Hiking Pack 60", brand: "Gregory", price: 240, featured: true },
-    { id: "cq3", slot: "boots", name: "Speedgoat 5", brand: "Hoka", price: 160, featured: true },
-    { id: "cq4", slot: "traction", name: "Microspikes", brand: "Kahtoola", price: 80, featured: false },
-  ],
-  "scree.sam": [
-    { id: "ss1", slot: "shell", name: "Hyperlite Mountain Gear", brand: "Hyperlite", price: 285, featured: true },
-    { id: "ss2", slot: "pack", name: "Osprey Stratos 34", brand: "Osprey", price: 180, featured: true },
-    { id: "ss3", slot: "boots", name: "Salomon Speed Assault", brand: "Salomon", price: 170, featured: true },
-  ],
-  "basin.bri": [
-    { id: "bb1", slot: "shell", name: "Torrentshell 3D Jacket", brand: "Patagonia", price: 339, featured: true },
-    { id: "bb2", slot: "pack", name: "Peak Design Travel Backpack", brand: "Peak Design", price: 250, featured: true },
-    { id: "bb3", slot: "boots", name: "Lowa Renegade GTX", brand: "Lowa", price: 260, featured: true },
-    { id: "bb4", slot: "sleep", name: "Nemo Disco 15", brand: "Nemo", price: 399, featured: false },
-  ],
-};
-
 export const SEED_LISTINGS = [
   { id: "l1", title: "Pocket Stove with Snow Peak fuel", price: 30, location: "Boulder", dist: 35, hue: 2, cat: "stove", kind: "sell", seller: "talus.tom", desc: "Used two seasons, burns clean.", sold: false },
   { id: "l2", title: "Camping set up! Stove + cook kit", price: 150, location: "Boulder", dist: 35, hue: 0, cat: "stove", kind: "both", lookingFor: "A 2P tent, or cash", seller: "scree.sam", desc: "Full kit, ready for the weekend.", sold: false },

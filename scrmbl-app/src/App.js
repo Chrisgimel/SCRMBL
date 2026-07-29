@@ -121,10 +121,12 @@ export default function App() {
     // Call backend API for authentication
     try {
       const userName = name || email.split('@')[0] || 'Scrmblr';
-      await api.signIn(email, userName);
+      const res = await api.signIn(email, userName);
+      // The server owns the handle (it has to be unique across accounts), so
+      // take whatever it assigns rather than keeping the "you" placeholder.
       setState((s) => ({
         ...s, signedIn: true, account: { email, sso: sso || null },
-        user: { ...s.user, name: userName },
+        user: { ...s.user, name: userName, handle: res?.user?.handle || s.user.handle },
       }));
     } catch (error) {
       console.error('Sign in failed:', error);

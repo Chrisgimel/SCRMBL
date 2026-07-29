@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
-const { initializeDatabase, runQuery, getQuery, allQuery } = require('./database');
+const { initializeDatabase, runQuery, getQuery, allQuery, slugifyHandle, uniqueHandle } = require('./database');
 const { matchTrail } = require('./trailMatcher');
 
 const app = express();
@@ -55,24 +55,36 @@ app.post('/api/auth/signin', async (req, res) => {
 
     // Create user if doesn't exist
     if (!user) {
+      const handle = await uniqueHandle(slugifyHandle(name, email));
       const result = await runQuery(
-        'INSERT INTO users (email, name) VALUES (?, ?)',
-        [email, name]
+        'INSERT INTO users (email, name, handle) VALUES (?, ?, ?)',
+        [email, name, handle]
       );
       user = await getQuery('SELECT * FROM users WHERE id = ?', [result.id]);
+    }
+
+    // An account created before handles existed still has none if it hasn't
+    // been through a boot-time backfill — give it one now rather than leaving
+    // the user unreachable at /api/users/:handle/gear.
+    if (!user.handle) {
+      const handle = await uniqueHandle(slugifyHandle(user.name, user.email), user.id);
+      await runQuery('UPDATE users SET handle = ? WHERE id = ?', [handle, user.id]);
+      user.handle = handle;
     }
 
     // Set session
     req.session.userId = user.id;
     req.session.userEmail = user.email;
     req.session.userName = user.name;
+    req.session.userHandle = user.handle;
 
     res.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        handle: user.handle
       }
     });
   } catch (error) {
@@ -89,7 +101,8 @@ app.get('/api/auth/me', (req, res) => {
       user: {
         id: req.session.userId,
         email: req.session.userEmail,
-        name: req.session.userName
+        name: req.session.userName,
+        handle: req.session.userHandle
       }
     });
   } else {
@@ -527,16 +540,13 @@ app.delete('/api/kits/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Get a user's gear by handle (read-only public endpoint).
-// The users table has no handle column yet, so a handle is matched against a
-// name with spaces stripped ("Chris G" -> "chrisg"). Swap this for a real
-// users.handle lookup once accounts carry one.
+// Get a user's gear by handle (read-only public endpoint)
 app.get('/api/users/:handle/gear', async (req, res) => {
   try {
     const { handle } = req.params;
 
     const user = await getQuery(
-      "SELECT id FROM users WHERE LOWER(REPLACE(name, ' ', '')) = LOWER(?)",
+      'SELECT id FROM users WHERE LOWER(handle) = LOWER(?)',
       [handle]
     );
 
