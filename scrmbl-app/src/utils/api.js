@@ -115,6 +115,54 @@ export async function getUserGear(handle) {
   return apiCall(`/users/${handle}/gear`);
 }
 
+export async function getGear() {
+  return apiCall('/gear');
+}
+
+export async function addGear(item) {
+  return apiCall('/gear', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+}
+
+export async function updateGear(id, item) {
+  return apiCall(`/gear/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(item),
+  });
+}
+
+export async function deleteGear(id) {
+  return apiCall(`/gear/${id}`, { method: 'DELETE' });
+}
+
+// ============================================
+// KITS API
+// ============================================
+
+export async function getKits() {
+  return apiCall('/kits');
+}
+
+export async function addKit(kit) {
+  return apiCall('/kits', {
+    method: 'POST',
+    body: JSON.stringify(kit),
+  });
+}
+
+export async function updateKit(id, kit) {
+  return apiCall(`/kits/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(kit),
+  });
+}
+
+export async function deleteKit(id) {
+  return apiCall(`/kits/${id}`, { method: 'DELETE' });
+}
+
 // ============================================
 // TRAIL API
 // ============================================

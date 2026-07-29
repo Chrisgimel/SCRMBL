@@ -66,6 +66,54 @@ function initializeDatabase() {
       }
     });
 
+    // Gear table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS gear (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        slot TEXT NOT NULL,
+        name TEXT NOT NULL,
+        brand TEXT,
+        price REAL,
+        source TEXT,
+        url TEXT,
+        featured INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating gear table:', err);
+      } else {
+        console.log('Gear table ready');
+      }
+    });
+
+    // Migration: `source` was missing from the first version of the gear
+    // table. CREATE TABLE IF NOT EXISTS won't add it to an existing db, so
+    // add it here and ignore the duplicate-column error on later boots.
+    db.run('ALTER TABLE gear ADD COLUMN source TEXT', (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error('Error adding gear.source column:', err);
+      }
+    });
+
+    // Kits table — gear_ids is JSON-encoded array of gear.id values
+    db.run(`
+      CREATE TABLE IF NOT EXISTS kits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        gear_ids TEXT NOT NULL DEFAULT '[]',
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating kits table:', err);
+      } else {
+        console.log('Kits table ready');
+      }
+    });
+
     // Trail geometry table — cached real-world route data per trail, fetched
     // from OpenStreetMap on first view and reused for every user after that.
     // points is JSON-encoded [[lat,lon],...]; '[]' means a confirmed no-match

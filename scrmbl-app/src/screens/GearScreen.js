@@ -7,7 +7,7 @@ import { readProductLink } from "../utils/retailers";
 import GearModal from "../components/gear/GearModal";
 import KitModal from "../components/gear/KitModal";
 
-function GearScreen({ state, setState, onSell, toast }) {
+function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature, saveKit, removeKit }) {
   const [tab, setTab] = useState("Loadout");
   const [editing, setEditing] = useState(null);
   const [editingKit, setEditingKit] = useState(null);
@@ -16,37 +16,27 @@ function GearScreen({ state, setState, onSell, toast }) {
   const usedIn = (id) => state.logs.filter((l) => (l.gear || []).includes(id)).length;
   const kits = state.kits || [];
 
-  const save = (item) => {
-    setState((s) => {
-      const exists = s.gear.some((g) => g.id === item.id);
-      return { ...s, gear: exists ? s.gear.map((g) => (g.id === item.id ? item : g)) : [...s.gear, item] };
-    });
+  // Toasts wait on the save so a failed sync can't report success
+  const save = async (item) => {
     setEditing(null);
-    toast(`${item.name} saved to your locker`);
+    const ok = await saveGear(item);
+    toast(ok ? `${item.name} saved to your locker` : `Couldn't save ${item.name}`, !ok);
   };
-  const remove = (id) => {
-    setState((s) => ({
-      ...s, gear: s.gear.filter((g) => g.id !== id),
-      logs: s.logs.map((l) => ({ ...l, gear: (l.gear || []).filter((g) => g !== id) })),
-      kits: (s.kits || []).map((k) => ({ ...k, gearIds: k.gearIds.filter((g) => g !== id) })).filter((k) => k.gearIds.length > 0),
-    }));
+  const remove = async (id) => {
     setEditing(null);
+    const ok = await removeGear(id);
+    if (!ok) toast("Couldn't remove that item", true);
   };
-  const toggleFeature = (id) => setState((s) => ({
-    ...s, gear: s.gear.map((g) => (g.id === id ? { ...g, featured: !g.featured } : g)),
-  }));
 
-  const saveKit = (kit) => {
-    setState((s) => {
-      const exists = (s.kits || []).some((k) => k.id === kit.id);
-      return { ...s, kits: exists ? s.kits.map((k) => (k.id === kit.id ? kit : k)) : [...(s.kits || []), kit] };
-    });
+  const onSaveKit = async (kit) => {
     setEditingKit(null);
-    toast(`${kit.name} saved`);
+    const ok = await saveKit(kit);
+    toast(ok ? `${kit.name} saved` : `Couldn't save ${kit.name}`, !ok);
   };
-  const removeKit = (id) => {
-    setState((s) => ({ ...s, kits: (s.kits || []).filter((k) => k.id !== id) }));
+  const onRemoveKit = async (id) => {
     setEditingKit(null);
+    const ok = await removeKit(id);
+    if (!ok) toast("Couldn't remove that kit", true);
   };
 
   return (
@@ -228,8 +218,8 @@ function GearScreen({ state, setState, onSell, toast }) {
 
       {editingKit && (
         <KitModal item={editingKit} gear={state.gear}
-          onClose={() => setEditingKit(null)} onSave={saveKit}
-          onRemove={editingKit.id ? () => removeKit(editingKit.id) : null} />
+          onClose={() => setEditingKit(null)} onSave={onSaveKit}
+          onRemove={editingKit.id ? () => onRemoveKit(editingKit.id) : null} />
       )}
     </div>
   );

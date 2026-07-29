@@ -304,15 +304,252 @@ app.get('/api/likes/:review_id/count', async (req, res) => {
 // GEAR ROUTES
 // ============================================
 
-// Get user's gear by handle (read-only public endpoint)
+// SQLite has no boolean type, and kits store their gear ids as JSON text.
+// Normalize both at the edge so the client always sees the same shapes it
+// used when gear lived in local state.
+function toGear(row) {
+  return { ...row, featured: !!row.featured };
+}
+
+function toKit(row) {
+  let gearIds = [];
+  try {
+    gearIds = JSON.parse(row.gear_ids) || [];
+  } catch (e) {
+    console.error('Malformed gear_ids on kit', row.id);
+  }
+  const { gear_ids, ...rest } = row;
+  return { ...rest, gearIds };
+}
+
+// Get signed-in user's gear
+app.get('/api/gear', requireAuth, async (req, res) => {
+  try {
+    const gear = await allQuery(
+      'SELECT * FROM gear WHERE user_id = ? ORDER BY id ASC',
+      [req.session.userId]
+    );
+    res.json(gear.map(toGear));
+  } catch (error) {
+    console.error('Error fetching gear:', error);
+    res.status(500).json({ error: 'Failed to fetch gear' });
+  }
+});
+
+// Add a gear item
+app.post('/api/gear', requireAuth, async (req, res) => {
+  try {
+    const { slot, name, brand, price, source, url, featured } = req.body;
+
+    if (!slot || !name) {
+      return res.status(400).json({ error: 'slot and name are required' });
+    }
+
+    const result = await runQuery(
+      'INSERT INTO gear (user_id, slot, name, brand, price, source, url, featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.session.userId, slot, name, brand || null, price || null, source || null, url || null, featured ? 1 : 0]
+    );
+
+    const newItem = await getQuery('SELECT * FROM gear WHERE id = ?', [result.id]);
+    res.json(toGear(newItem));
+  } catch (error) {
+    console.error('Error adding gear:', error);
+    res.status(500).json({ error: 'Failed to add gear' });
+  }
+});
+
+// Update a gear item
+app.put('/api/gear/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { slot, name, brand, price, source, url, featured } = req.body;
+
+    const existing = await getQuery(
+      'SELECT * FROM gear WHERE id = ? AND user_id = ?',
+      [id, req.session.userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Gear item not found' });
+    }
+
+    await runQuery(
+      'UPDATE gear SET slot = ?, name = ?, brand = ?, price = ?, source = ?, url = ?, featured = ? WHERE id = ? AND user_id = ?',
+      [
+        slot !== undefined ? slot : existing.slot,
+        name !== undefined ? name : existing.name,
+        brand !== undefined ? brand : existing.brand,
+        price !== undefined ? price : existing.price,
+        source !== undefined ? source : existing.source,
+        url !== undefined ? url : existing.url,
+        featured !== undefined ? (featured ? 1 : 0) : existing.featured,
+        id,
+        req.session.userId
+      ]
+    );
+
+    const updated = await getQuery('SELECT * FROM gear WHERE id = ?', [id]);
+    res.json(toGear(updated));
+  } catch (error) {
+    console.error('Error updating gear:', error);
+    res.status(500).json({ error: 'Failed to update gear' });
+  }
+});
+
+// Delete a gear item
+app.delete('/api/gear/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await runQuery(
+      'DELETE FROM gear WHERE id = ? AND user_id = ?',
+      [id, req.session.userId]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Gear item not found' });
+    }
+
+    // Scrub the deleted item from this user's kits, and drop any kit left
+    // empty — otherwise a reload would resurrect kits holding dangling ids.
+    const kits = await allQuery('SELECT * FROM kits WHERE user_id = ?', [req.session.userId]);
+    for (const kit of kits) {
+      const gearIds = toKit(kit).gearIds;
+      if (!gearIds.some((g) => String(g) === String(id))) continue;
+
+      const remaining = gearIds.filter((g) => String(g) !== String(id));
+      if (remaining.length === 0) {
+        await runQuery('DELETE FROM kits WHERE id = ? AND user_id = ?', [kit.id, req.session.userId]);
+      } else {
+        await runQuery(
+          'UPDATE kits SET gear_ids = ? WHERE id = ? AND user_id = ?',
+          [JSON.stringify(remaining), kit.id, req.session.userId]
+        );
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting gear:', error);
+    res.status(500).json({ error: 'Failed to delete gear' });
+  }
+});
+
+// ============================================
+// KIT ROUTES
+// ============================================
+
+// Get signed-in user's kits
+app.get('/api/kits', requireAuth, async (req, res) => {
+  try {
+    const kits = await allQuery(
+      'SELECT * FROM kits WHERE user_id = ? ORDER BY id ASC',
+      [req.session.userId]
+    );
+    res.json(kits.map(toKit));
+  } catch (error) {
+    console.error('Error fetching kits:', error);
+    res.status(500).json({ error: 'Failed to fetch kits' });
+  }
+});
+
+// Create a kit
+app.post('/api/kits', requireAuth, async (req, res) => {
+  try {
+    const { name, gearIds } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    const result = await runQuery(
+      'INSERT INTO kits (user_id, name, gear_ids) VALUES (?, ?, ?)',
+      [req.session.userId, name, JSON.stringify(gearIds || [])]
+    );
+
+    const newKit = await getQuery('SELECT * FROM kits WHERE id = ?', [result.id]);
+    res.json(toKit(newKit));
+  } catch (error) {
+    console.error('Error creating kit:', error);
+    res.status(500).json({ error: 'Failed to create kit' });
+  }
+});
+
+// Update a kit
+app.put('/api/kits/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, gearIds } = req.body;
+
+    const existing = await getQuery(
+      'SELECT * FROM kits WHERE id = ? AND user_id = ?',
+      [id, req.session.userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Kit not found' });
+    }
+
+    await runQuery(
+      'UPDATE kits SET name = ?, gear_ids = ? WHERE id = ? AND user_id = ?',
+      [
+        name !== undefined ? name : existing.name,
+        gearIds !== undefined ? JSON.stringify(gearIds) : existing.gear_ids,
+        id,
+        req.session.userId
+      ]
+    );
+
+    const updated = await getQuery('SELECT * FROM kits WHERE id = ?', [id]);
+    res.json(toKit(updated));
+  } catch (error) {
+    console.error('Error updating kit:', error);
+    res.status(500).json({ error: 'Failed to update kit' });
+  }
+});
+
+// Delete a kit
+app.delete('/api/kits/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await runQuery(
+      'DELETE FROM kits WHERE id = ? AND user_id = ?',
+      [id, req.session.userId]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Kit not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting kit:', error);
+    res.status(500).json({ error: 'Failed to delete kit' });
+  }
+});
+
+// Get a user's gear by handle (read-only public endpoint).
+// The users table has no handle column yet, so a handle is matched against a
+// name with spaces stripped ("Chris G" -> "chrisg"). Swap this for a real
+// users.handle lookup once accounts carry one.
 app.get('/api/users/:handle/gear', async (req, res) => {
   try {
     const { handle } = req.params;
 
-    // For now, gear data is only stored client-side in localStorage
-    // This endpoint will be populated once gear persistence is implemented
-    // Return empty array until gear table is created
-    res.json([]);
+    const user = await getQuery(
+      "SELECT id FROM users WHERE LOWER(REPLACE(name, ' ', '')) = LOWER(?)",
+      [handle]
+    );
+
+    if (!user) {
+      return res.json([]);
+    }
+
+    const gear = await allQuery(
+      'SELECT * FROM gear WHERE user_id = ? ORDER BY id ASC',
+      [user.id]
+    );
+
+    res.json(gear.map(toGear));
   } catch (error) {
     console.error('Error fetching user gear:', error);
     res.status(500).json({ error: 'Failed to fetch user gear' });

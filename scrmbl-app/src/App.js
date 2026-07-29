@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Layers, Plus, Shirt, ShoppingCart } from "lucide-react";
 import { useBucklist } from "./hooks/useBucklist";
 import { useLikes } from "./hooks/useLikes";
+import { useGear } from "./hooks/useGear";
 import * as api from "./utils/api";
 import Logo from "./components/ui/Logo";
 
@@ -66,6 +67,9 @@ export default function App() {
 
   // Backend-synced likes
   const { toggleLike, isLiked, getLikeCount } = useLikes(state.signedIn, state.likedReviewIds, state.likeCounts, setState);
+
+  // Backend-synced gear + kits
+  const { saveGear, removeGear, toggleFeature, saveKit, removeKit } = useGear(state.signedIn, state.gear, state.kits, setState);
 
   // Sync bucklist from hook to state for existing components
   useEffect(() => {
@@ -186,7 +190,9 @@ export default function App() {
               ) : (
                 <>
                   {tab === "feed" && <FeedScreen state={state} setState={setState} openHike={openHike} openUser={openUser} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openReviewDetail={openReviewDetail} openPhotoViewer={setPhotoViewer} />}
-                  {tab === "gear" && <GearScreen state={state} setState={setState} toast={toast}
+                  {tab === "gear" && <GearScreen state={state} toast={toast}
+                    saveGear={saveGear} removeGear={removeGear} toggleFeature={toggleFeature}
+                    saveKit={saveKit} removeKit={removeKit}
                     onSell={(g) => { setSellDraft(g); setTab("market"); }} />}
                   {tab === "market" && <MarketScreen state={state} setState={setState} premium={state.premium}
                     openThread={openThread} openInbox={openInbox} openUser={openUser} sellDraft={sellDraft}

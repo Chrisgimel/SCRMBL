@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, Award, Package } from "lucide-react";
 import Avatar from "../components/ui/Avatar";
 import Empty from "../components/ui/Empty";
@@ -9,18 +9,32 @@ import ReviewCard from "../components/hike/ReviewCard";
 import RareBadge from "../components/ui/RareBadge";
 import KarmaBadge from "../components/ui/KarmaBadge";
 
-import { COMMUNITY_GEAR, COMMUNITY_LOGS, COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
+import { COMMUNITY_LOGS, COMMUNITY_TOP, SLOT, THEME, USER_BY_HANDLE } from "../constants";
 import { fmtStats, hikeById, isRareHike } from "../utils/helpers";
 import { spotlightHike, totalKarmaForLogs } from "../utils/karma";
+import * as api from "../utils/api";
 
 function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isLiked, getLikeCount }) {
   const u = USER_BY_HANDLE[handle];
   const [tab, setTab] = useState("Top Hikes");
+  const [gear, setGear] = useState([]);
+
+  // Real gear from the backend, replacing the old COMMUNITY_GEAR seed lookup
+  useEffect(() => {
+    let cancelled = false;
+    api.getUserGear(handle)
+      .then((g) => { if (!cancelled) setGear(g || []); })
+      .catch((err) => {
+        console.error('Failed to load gear for', handle, err);
+        if (!cancelled) setGear([]);
+      });
+    return () => { cancelled = true; };
+  }, [handle]);
+
   if (!u) return <Empty title="Hiker not found" />;
   const following = state.following.includes(handle);
   const logs = COMMUNITY_LOGS.filter((l) => l.handle === handle).sort((a, b) => b.date.localeCompare(a.date));
   const top = COMMUNITY_TOP[handle] || [];
-  const gear = COMMUNITY_GEAR?.[handle] || [];
   const vert = logs.reduce((a, l) => a + (hikeById(state, l.hikeId)?.gain || 0), 0);
   const karma = totalKarmaForLogs(logs, state, spotlightHike(state)?.id);
 
