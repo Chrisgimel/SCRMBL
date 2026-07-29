@@ -5,18 +5,16 @@ import HikePoster from "../hike/HikePoster";
 import Rating from "../ui/Rating";
 import AchievementBadge from "../ui/AchievementBadge";
 import { THEME } from "../../constants";
-import { achievements, rarityOf, hasDistanceBadge, hasAltitudeBadge, isFastestEntry, isPR } from "../../utils/helpers";
+import { achievements, rarityOf, hasDistanceBadge, hasAltitudeBadge } from "../../utils/helpers";
 
 /* The "you did it" moment the app never had. (plan 4) */
 function LoggedSheet({ state, result, onClose, openHike }) {
-  const { hike, wasOnBucket, firstEver, rating, entry } = result;
+  const { hike, wasOnBucket, firstEver, rating } = result;
   const st = achievements(state);
   const rare = rarityOf(state, hike.id);
   const isFirst = rare.n === 0;
   const hasDist = hasDistanceBadge(hike);
   const hasAlt = hasAltitudeBadge(hike);
-  const fastest = entry && isFastestEntry(state, entry);
-  const pr = entry && isPR(state, entry);
   return (
     <Sheet title="Logged" onClose={onClose} closeLabel="Done"
       footer={<button className="primary-btn" onClick={() => { onClose(); openHike(hike.id); }}>See the trail page</button>}>
@@ -38,8 +36,6 @@ function LoggedSheet({ state, result, onClose, openHike }) {
           {hike.summit >= 14000 && <span className="badge"><Mountain size={11} /> 14er · {st.fourteeners.length} total</span>}
           {hike.klass >= 3 && <span className="badge"><Award size={11} /> Class 3</span>}
           {!firstEver && <span className="badge"><Repeat size={11} /> Repeat</span>}
-          {fastest && <span className="badge"><AchievementBadge icon="/badges/fastest.png" size={13} /> Fastest completion</span>}
-          {pr && <span className="badge"><AchievementBadge icon="/badges/pr.png" size={13} /> Personal best</span>}
           {hasDist && <span className="badge"><AchievementBadge icon="/badges/distance.png" size={13} /> 10+ miles</span>}
           {hasAlt && <span className="badge"><AchievementBadge icon="/badges/altitude.png" size={13} /> 13,000+ feet</span>}
         </div>

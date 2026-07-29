@@ -5,7 +5,7 @@ import Avatar from "../ui/Avatar";
 import Rating from "../ui/Rating";
 import AchievementBadge from "../ui/AchievementBadge";
 import { THEME, USER_BY_HANDLE, EFFORT_LABEL } from "../../constants";
-import { fmtDate, hikeById, hasDistanceBadge, hasAltitudeBadge, isFastestEntry, isPR, photoSrc } from "../../utils/helpers";
+import { fmtDate, hikeById, hasDistanceBadge, hasAltitudeBadge, photoSrc } from "../../utils/helpers";
 
 function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const [explainBadge, setExplainBadge] = useState(null);
@@ -13,15 +13,11 @@ function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLik
   const u = USER_BY_HANDLE[review.handle] || { name: review.handle, hue: 0 };
   const hasDist = h && hasDistanceBadge(h);
   const hasAlt = h && hasAltitudeBadge(h);
-  const fastest = isFastestEntry(state, review);
-  const pr = isPR(state, review);
-  const hasAchievements = hasDist || hasAlt || fastest || pr;
+  const hasAchievements = hasDist || hasAlt;
 
   const badges = {
     distance: { title: "Distance", desc: "Trail is longer than 10 miles" },
     altitude: { title: "Altitude", desc: "Summit elevation above 13,000 feet" },
-    fastest: { title: "Fastest", desc: "Fastest logged completion time on this trail across all hikers" },
-    pr: { title: "Personal Best", desc: "Your personal fastest time on this trail" },
   };
 
   return (
@@ -49,16 +45,6 @@ function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLik
           {hasAlt && (
             <button onClick={() => setExplainBadge("altitude")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
               <AchievementBadge icon="/badges/altitude.png" label="Above 13,000 feet" size={11} />
-            </button>
-          )}
-          {fastest && (
-            <button onClick={() => setExplainBadge("fastest")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-              <AchievementBadge icon="/badges/fastest.png" label="Fastest completion" size={11} />
-            </button>
-          )}
-          {pr && (
-            <button onClick={() => setExplainBadge("pr")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-              <AchievementBadge icon="/badges/pr.png" label="Personal best time" size={11} />
             </button>
           )}
         </div>

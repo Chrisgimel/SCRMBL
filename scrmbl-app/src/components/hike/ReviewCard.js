@@ -6,7 +6,7 @@ import RareChip from "../ui/RareChip";
 import AchievementBadge from "../ui/AchievementBadge";
 
 import { EFFORT_LABEL, THEME, USER_BY_HANDLE } from "../../constants";
-import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isFastestEntry, isPR, isRareHike, photoSrc } from "../../utils/helpers";
+import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isRareHike, photoSrc } from "../../utils/helpers";
 
 function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const u = entry.mine ? { name: "You", hue: state.user.hue } : USER_BY_HANDLE[entry.handle];
@@ -15,9 +15,7 @@ function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLi
   const rare = hikeName && isRareHike && isRareHike(state, entry.hikeId);
   const hasDist = hike && hasDistanceBadge && hasDistanceBadge(hike);
   const hasAlt = hike && hasAltitudeBadge && hasAltitudeBadge(hike);
-  const fastest = isFastestEntry && isFastestEntry(state, entry);
-  const pr = isPR && isPR(state, entry);
-  const hasAchievements = hasDist || hasAlt || fastest || pr;
+  const hasAchievements = hasDist || hasAlt;
   return (
     <div className="review-card">
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -64,8 +62,6 @@ function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLi
         <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
           {hasDist && <AchievementBadge icon="/badges/distance.png" label="Longer than 10 miles" size={11} />}
           {hasAlt && <AchievementBadge icon="/badges/altitude.png" label="Above 13,000 feet" size={11} />}
-          {fastest && <AchievementBadge icon="/badges/fastest.png" label="Fastest completion" size={11} />}
-          {pr && <AchievementBadge icon="/badges/pr.png" label="Personal best time" size={11} />}
         </div>
       )}
       {entry.review && <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 6, lineHeight: 1.45 }}>{entry.review}</div>}

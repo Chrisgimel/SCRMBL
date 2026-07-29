@@ -79,37 +79,16 @@ export function isRareHike(state, hikeId) {
 }
 
 /* ================================================================
-   PER-ENTRY BADGES — Fastest, PR. Per-trail badges — Distance (>10mi),
-   Altitude (>13k ft). Rare lives above; these follow the same pattern:
-   pure functions over state + static hike data. (plan 9, simplified)
+   PER-TRAIL BADGES — Distance (>10mi), Altitude (>13k ft). Rare lives
+   above; these follow the same pattern: pure functions over state +
+   static hike data. (plan 9, simplified)
+
+   Time is deliberately not reward-bearing anywhere in the app — it's
+   informational only (helps other hikers estimate duration), never a
+   badge, achievement, or karma input. There used to be Fastest/PR
+   badges keyed off entry.time; removed since a self-typed number with
+   a competitive payoff is exactly the kind of field people inflate.
    ================================================================ */
-
-/* Fastest: the quickest recorded time for a trail, across the whole
-   community and you — only entries with a logged time compete. */
-export function fastestEntryFor(state, hikeId) {
-  const all = [
-    ...COMMUNITY_LOGS.filter((l) => l.hikeId === hikeId && l.time != null),
-    ...state.logs.filter((l) => l.hikeId === hikeId && l.time != null),
-  ];
-  if (!all.length) return null;
-  return all.reduce((best, l) => (l.time < best.time ? l : best));
-}
-export function isFastestEntry(state, entry) {
-  if (entry.time == null) return false;
-  const fastest = fastestEntryFor(state, entry.hikeId);
-  return !!fastest && fastest.id === entry.id;
-}
-
-/* PR: this entry beat every one of your own earlier attempts at the
-   same trail. A first-ever attempt has nothing to beat, so it never
-   qualifies — PR is specifically about your personal best time. */
-export function isPR(state, entry) {
-  if (entry.time == null) return false;
-  const priorTimes = state.logs
-    .filter((l) => l.hikeId === entry.hikeId && l.time != null && l.date < entry.date)
-    .map((l) => l.time);
-  return priorTimes.length > 0 && entry.time < Math.min(...priorTimes);
-}
 
 /* Distance badge — static per-trail, awarded for hikes longer than 10 miles. */
 export function hasDistanceBadge(hike) {
