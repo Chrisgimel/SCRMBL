@@ -5,6 +5,7 @@ import { useLikes } from "./hooks/useLikes";
 import { useGear } from "./hooks/useGear";
 import { useLogs } from "./hooks/useLogs";
 import { useTop } from "./hooks/useTop";
+import { useProfile } from "./hooks/useProfile";
 import * as api from "./utils/api";
 import Logo from "./components/ui/Logo";
 
@@ -78,6 +79,10 @@ export default function App() {
 
   // Backend-synced Top Hikes shelf
   const { setTop } = useTop(state.signedIn, state.top, state.isDemo, setState);
+
+  // Backend-synced profile fields (name, city, bio) — debounced, since
+  // Settings edits them a keystroke at a time
+  useProfile(state.signedIn, state.user, state.isDemo, setState);
 
   // Sync bucklist from hook to state for existing components
   useEffect(() => {

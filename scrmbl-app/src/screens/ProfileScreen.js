@@ -79,8 +79,11 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
       <div style={{ padding: "4px 18px 0" }}>
         <Avatar hue={state.user.hue} size={84} handle="me" />
         <div style={{ fontFamily: "var(--display)", fontSize: 34, fontWeight: 700, color: THEME.grayLight, lineHeight: 1.05, marginTop: 14 }}>{state.user.name}</div>
+        {/* Either part can be absent — a demo/never-signed-in state has no real
+            handle, and a synced profile has no city until you set one — so the
+            separator only appears when there's something on both sides. */}
         <div style={{ color: THEME.textDim, fontWeight: 500, marginTop: 2, fontSize: 15 }}>
-          {myHandle ? `@${myHandle} · ${state.user.city}` : state.user.city}
+          {[myHandle && `@${myHandle}`, state.user.city].filter(Boolean).join(" · ")}
         </div>
         {state.user.bio && <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 8, lineHeight: 1.45 }}>{state.user.bio}</div>}
 

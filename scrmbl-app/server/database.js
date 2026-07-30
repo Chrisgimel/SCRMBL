@@ -42,6 +42,22 @@ function initializeDatabase() {
       backfillHandles();
     });
 
+    // Migration: city/bio are newer than the users table, and until now lived
+    // only in local state — Settings could edit them but nothing persisted
+    // them, so they vanished on any other device and community profiles for
+    // real accounts had nothing to show. Same ignore-duplicate-column idiom as
+    // above; both are nullable, since an account has neither until it says so.
+    db.run('ALTER TABLE users ADD COLUMN city TEXT', (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error('Error adding users.city column:', err);
+      }
+    });
+    db.run('ALTER TABLE users ADD COLUMN bio TEXT', (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error('Error adding users.bio column:', err);
+      }
+    });
+
     // Bucklist table
     db.run(`
       CREATE TABLE IF NOT EXISTS bucklist (

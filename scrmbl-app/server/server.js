@@ -106,6 +106,70 @@ app.post('/api/auth/signin', async (req, res) => {
   }
 });
 
+// Your own editable profile. Kept separate from /api/auth/me, which answers
+// only "is there a session" from session data and never reads the table.
+app.get('/api/profile', requireAuth, async (req, res) => {
+  try {
+    const user = await getQuery(
+      'SELECT name, handle, city, bio FROM users WHERE id = ?',
+      [req.session.userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      name: user.name,
+      handle: user.handle,
+      city: user.city || '',
+      bio: user.bio || '',
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Update the fields Settings can edit. The handle is deliberately not one of
+// them: it has to stay unique, other users' links point at it, and nothing in
+// the UI offers to change it.
+app.put('/api/profile', requireAuth, async (req, res) => {
+  try {
+    const { name, city, bio } = req.body;
+
+    // A blank display name would leave the account showing as nothing at all
+    // on every review card, so it's the one required field.
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Display name is required' });
+    }
+
+    await runQuery(
+      'UPDATE users SET name = ?, city = ?, bio = ? WHERE id = ?',
+      [name.trim(), (city || '').trim(), (bio || '').trim(), req.session.userId]
+    );
+
+    // The session caches the name for /api/auth/me, so it has to move too or
+    // a reload would show the old one until the next sign-in.
+    req.session.userName = name.trim();
+
+    const user = await getQuery(
+      'SELECT name, handle, city, bio FROM users WHERE id = ?',
+      [req.session.userId]
+    );
+
+    res.json({
+      name: user.name,
+      handle: user.handle,
+      city: user.city || '',
+      bio: user.bio || '',
+    });
+  } catch (error) {
+    console.error('Error saving profile:', error);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+});
+
 // Check if user is signed in
 app.get('/api/auth/me', (req, res) => {
   if (req.session.userId) {
@@ -553,14 +617,14 @@ app.delete('/api/kits/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Minimal public profile for a handle, so a real account — not just one of
-// the five seed personas the frontend hardcodes — can be opened from a feed,
-// a shelf or a trail page. Name and handle only: email is never exposed here,
-// and the users table holds no city/bio/avatar to give out.
+// Public profile for a handle, so a real account — not just one of the five
+// seed personas the frontend hardcodes — can be opened from a feed, a shelf
+// or a trail page. Only what a profile page renders: email is never exposed
+// here, and city/bio come back as empty strings until the user sets them.
 app.get('/api/users/:handle', async (req, res) => {
   try {
     const user = await getQuery(
-      'SELECT handle, name FROM users WHERE LOWER(handle) = LOWER(?)',
+      'SELECT handle, name, city, bio FROM users WHERE LOWER(handle) = LOWER(?)',
       [req.params.handle]
     );
 
@@ -568,7 +632,12 @@ app.get('/api/users/:handle', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ handle: user.handle, name: user.name });
+    res.json({
+      handle: user.handle,
+      name: user.name,
+      city: user.city || '',
+      bio: user.bio || '',
+    });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });

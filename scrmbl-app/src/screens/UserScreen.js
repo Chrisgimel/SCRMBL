@@ -50,9 +50,15 @@ function UserScreen({ state, setState, handle, onBack, openHike, toggleLike, isL
     return () => { cancelled = true; };
   }, [handle]);
 
-  // The persona record wins when there is one — it carries the city, bio and
-  // avatar hue the users table doesn't store.
-  const u = seed || (account && { ...userForHandle(handle), name: account.name || handle });
+  // The persona record wins when there is one — it carries the avatar hue the
+  // users table has no column for. A real account contributes whatever it has
+  // actually set; city and bio come back as empty strings until then.
+  const u = seed || (account && {
+    ...userForHandle(handle),
+    name: account.name || handle,
+    city: account.city || "",
+    bio: account.bio || "",
+  });
 
   if (!u) return lookedUp ? <Empty title="Hiker not found" /> : null;
   const following = state.following.includes(handle);

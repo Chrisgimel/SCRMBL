@@ -214,6 +214,24 @@ export async function getCommunityLogs() {
 }
 
 // ============================================
+// PROFILE API
+// ============================================
+
+// Your own editable profile — { name, handle, city, bio }.
+export async function getProfile() {
+  return apiCall('/profile');
+}
+
+// Saves the fields Settings can edit. The handle isn't one of them: it must
+// stay unique and other users' links point at it.
+export async function saveProfile({ name, city, bio }) {
+  return apiCall('/profile', {
+    method: 'PUT',
+    body: JSON.stringify({ name, city, bio }),
+  });
+}
+
+// ============================================
 // TOP HIKES API
 // ============================================
 
