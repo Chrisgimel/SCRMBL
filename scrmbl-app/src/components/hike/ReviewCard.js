@@ -5,11 +5,11 @@ import Rating from "../ui/Rating";
 import RareChip from "../ui/RareChip";
 import AchievementBadge from "../ui/AchievementBadge";
 
-import { EFFORT_LABEL, THEME, USER_BY_HANDLE } from "../../constants";
-import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isRareHike, photoSrc } from "../../utils/helpers";
+import { EFFORT_LABEL, THEME } from "../../constants";
+import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isRareHike, photoSrc, userForHandle } from "../../utils/helpers";
 
 function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
-  const u = entry.mine ? { name: "You", hue: state.user.hue } : USER_BY_HANDLE[entry.handle];
+  const u = entry.mine ? { name: "You", hue: state.user.hue } : userForHandle(entry.handle);
   const gear = entry.mine ? (entry.gear || []).map((id) => state.gear.find((g) => g.id === id)).filter(Boolean) : [];
   const following = state.following.includes(entry.handle);
   const rare = hikeName && isRareHike && isRareHike(state, entry.hikeId);

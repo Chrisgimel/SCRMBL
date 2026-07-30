@@ -13,8 +13,8 @@ import PoiDetailSheet from "../components/modals/PoiDetailSheet";
 import PoiSectionsSheet from "../components/modals/PoiSectionsSheet";
 import { usePois } from "../hooks/usePois";
 
-import { ASSETS, EFFORT_LABEL, EFFORTS, THEME, USER_BY_HANDLE } from "../constants";
-import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hikeById, photoGeo, photoSrc, rankedBy, rarityOf, ratingOut } from "../utils/helpers";
+import { ASSETS, EFFORT_LABEL, EFFORTS, THEME } from "../constants";
+import { aggregate, entriesFor, hasAltitudeBadge, hasDistanceBadge, hasStats, hikeById, photoGeo, photoSrc, rankedBy, rarityOf, ratingOut, userForHandle } from "../utils/helpers";
 
 function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, toggleBucklist, toggleLike, isLiked, getLikeCount, openPhotoViewer }) {
   const h = hikeById(state, hikeId);
@@ -29,7 +29,7 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
   const agg = aggregate(state, hikeId);
   const entries = entriesFor(state, hikeId);
   const rarity = rarityOf(state, hikeId);
-  const shelves = rankedBy(hikeId);
+  const shelves = rankedBy(state, hikeId);
   const inBucket = state.bucket.includes(hikeId);
   const myEntries = state.logs.filter((l) => l.hikeId === hikeId);
   const myTop = state.top.indexOf(hikeId);
@@ -191,7 +191,9 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
                   </div>
                 )}
                 {shelves.map(({ handle, rank }) => {
-                  const u = USER_BY_HANDLE[handle];
+                  // Shelves come from the backend now, so a handle can belong
+                  // to a real account rather than one of the seed personas.
+                  const u = userForHandle(handle);
                   return (
                     <button key={handle} className="rank-card" onClick={() => openUser(handle)} style={{ border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>
                       <div className="rank-num">{rank}</div>

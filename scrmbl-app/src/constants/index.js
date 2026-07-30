@@ -164,14 +164,11 @@ export const SEED_USERS = [
 ];
 export const USER_BY_HANDLE = Object.fromEntries(SEED_USERS.map((u) => [u.handle, u]));
 
-/* Whose Top Hikes shelf holds what — powers "ranked by" on a hike page */
-export const COMMUNITY_TOP = {
-  ridgelinerachel: ["icelakes", "bluelakes", "skypond"],
-  "talus.tom": ["grays", "bierstadt", "sanitas"],
-  cairn_queen: ["keyhole", "quandary", "bierstadt", "grays"],
-  "scree.sam": ["keyhole", "skypond"],
-  "basin.bri": ["chicago", "icelakes", "bluelakes"],
-};
+/* Whose Top Hikes shelf holds what — which powers "ranked by" on a hike page
+   — now lives in the top_hikes table, read via /api/community/top into
+   state.communityTop. server/seedTop.js is the only copy of the persona data.
+   The COMMUNITY_TOP constant that used to sit here is deliberately gone, so
+   the two can't drift. */
 
 export const SEED_LISTINGS = [
   { id: "l1", title: "Pocket Stove with Snow Peak fuel", price: 30, location: "Boulder", dist: 35, hue: 2, cat: "stove", kind: "sell", seller: "talus.tom", desc: "Used two seasons, burns clean.", sold: false },
@@ -231,11 +228,13 @@ export const DEFAULT_STATE = {
   top: [],                    // ordered hikeIds — rank IS the index (plan 1.1 / 3.4)
   bucket: [],
   customHikes: [],
-  /* Other hikers' entries and their custom routes, loaded from
-     /api/community/logs at startup. Not persisted — server-owned, refetched
-     each launch so the feed doesn't go stale. */
+  /* Other hikers' entries, their custom routes and their ranked shelves,
+     loaded from /api/community/logs and /api/community/top at startup. Not
+     persisted — server-owned, refetched each launch so the feed doesn't go
+     stale. communityTop is keyed by handle: { handle: [hikeId, ...] }. */
   communityLogs: [],
   communityHikes: [],
+  communityTop: {},
   gear: [],
   kits: [],                   // named groups of gear IDs for quick-attach when logging
   likedReviewIds: [],         // reviewIds that current user has liked

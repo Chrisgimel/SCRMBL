@@ -233,6 +233,29 @@ function initializeDatabase() {
         console.log('POIs table ready');
       }
     });
+
+    // Top hikes table — a user's ranked shelf. position is the 0-based rank,
+    // and the whole list is rewritten on every save: it is short (TOP_CAP) and
+    // reordering shifts most rows anyway, so per-row updates would buy nothing
+    // and could leave gaps mid-failure. Cross-account read, like pois: a hike
+    // page shows who else ranks it and where.
+    db.run(`
+      CREATE TABLE IF NOT EXISTS top_hikes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        hike_id TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(user_id, hike_id)
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Error creating top_hikes table:', err);
+      } else {
+        console.log('Top hikes table ready');
+      }
+    });
   });
 }
 

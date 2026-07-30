@@ -23,8 +23,6 @@
 ### 3. **Seed Data** (Lines 179-300)
 - **SEED_HIKES** - 10 Colorado hikes with stats
 - **SEED_USERS** - 5 community hikers with profiles
-- **COMMUNITY_LOGS** - 17 demo hike reviews
-- **COMMUNITY_TOP** - User rank preferences
 - **SEED_LISTINGS** - 8 marketplace items
 - **DEMO_LOGS/GEAR** - Demo account data
 - **DEFAULT_STATE** - Initial app state schema
@@ -48,7 +46,7 @@ Functions:
 - `hikeById(state, id)` - Lookup hike
 - `entriesFor(state, hikeId)` - All entries (you + community)
 - `aggregate(state, hikeId)` - Rating stats per hike
-- `rankedBy(hikeId)` - Community rankings
+- `rankedBy(state, hikeId)` - Community rankings, from `state.communityTop`
 - `rarityOf(state, hikeId)` - Rarity classification
 - `achievements(state)` - User stats & badge computation
 

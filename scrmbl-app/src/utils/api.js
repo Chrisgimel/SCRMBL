@@ -112,6 +112,13 @@ export async function getLikeCount(reviewId) {
 // GEAR API
 // ============================================
 
+// Public profile for a handle — { handle, name }. Rejects with a 404 error
+// when no account owns it, which is how UserScreen tells "real account" from
+// "no such hiker".
+export async function getUser(handle) {
+  return apiCall(`/users/${handle}`);
+}
+
 export async function getUserGear(handle) {
   return apiCall(`/users/${handle}/gear`);
 }
@@ -204,6 +211,30 @@ export async function getUserLogs(handle) {
 // this. Excludes your own logs, which the client already holds.
 export async function getCommunityLogs() {
   return apiCall('/community/logs');
+}
+
+// ============================================
+// TOP HIKES API
+// ============================================
+
+export async function getTop() {
+  return apiCall('/top');
+}
+
+// The whole ranked shelf goes up at once — every change is a reorder or a
+// removal that shifts most positions anyway.
+export async function saveTop(top) {
+  return apiCall('/top', {
+    method: 'PUT',
+    body: JSON.stringify({ top }),
+  });
+}
+
+// Everyone else's ranked shelves, keyed by handle. Powers "ranked by" on a
+// trail page and the Top Hikes grid on a community profile. Excludes your
+// own shelf, which the client already holds in state.top.
+export async function getCommunityTop() {
+  return apiCall('/community/top');
 }
 
 // ============================================

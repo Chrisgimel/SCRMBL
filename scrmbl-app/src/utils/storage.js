@@ -90,7 +90,7 @@ export async function persist(state) {
   /* Community data is server-owned and refetched at every launch, so keeping
      a copy here would only bloat the save and risk showing a stale feed
      before the fetch lands. */
-  const { communityLogs, communityHikes, ...persisted } = state;
+  const { communityLogs, communityHikes, communityTop, ...persisted } = state;
   await store.set(STORAGE_KEY, JSON.stringify(persisted));
 }
 

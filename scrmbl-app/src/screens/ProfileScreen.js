@@ -14,7 +14,7 @@ import { THEME, TOP_CAP, USER_BY_HANDLE } from "../constants";
 import { achievements, allHikes, fmtStats, hikeById, isRareHike, userAchievements } from "../utils/helpers";
 import { spotlightHike, totalKarma } from "../utils/karma";
 
-function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser, removeLog }) {
+function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser, removeLog, setTop }) {
   const [tab, setTab] = useState("Top Hikes");
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersTab, setFollowersTab] = useState("Followers");
@@ -29,18 +29,27 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
     .map((a) => ({ id: a.id, icon: a.icon, label: a.title, note: `+${a.karmaValue || 0} karma` })), [state]);
   const allBadges = [...stats.badges, ...achievementBadges];
 
-  const move = (hikeId, dir) => setState((s) => {
-    const i = s.top.indexOf(hikeId);
+  /* The shelf syncs to the backend now, so the next order is computed from
+     state.top and handed to setTop — never derived inside a setState updater,
+     which isn't guaranteed to have run by the time the API call needs it. */
+  const move = (hikeId, dir) => {
+    const i = state.top.indexOf(hikeId);
     const j = i + dir;
-    if (i < 0 || j < 0 || j >= s.top.length) return s;
-    const top = [...s.top];
-    [top[i], top[j]] = [top[j], top[i]];
-    return { ...s, top };
-  });
-  const unpin = (hikeId) => setState((s) => ({ ...s, top: s.top.filter((id) => id !== hikeId) }));
+    if (i < 0 || j < 0 || j >= state.top.length) return;
+    const next = [...state.top];
+    [next[i], next[j]] = [next[j], next[i]];
+    setTop(next);
+  };
+  const unpin = (hikeId) => setTop(state.top.filter((id) => id !== hikeId));
 
   const liked = state.logs.filter((l) => l.liked);
   const diary = [...state.logs].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  /* The server gives every account a unique handle at sign-up, but the local
+     default is the literal "you" — which several places use as a "this entry is
+     mine" sentinel, not as an identity. Only render a handle that's really one,
+     so demo/never-signed-in state shows the city alone instead of "@you". */
+  const myHandle = state.user.handle && state.user.handle !== "you" ? state.user.handle : null;
 
   return (
     <>
@@ -70,7 +79,9 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
       <div style={{ padding: "4px 18px 0" }}>
         <Avatar hue={state.user.hue} size={84} handle="me" />
         <div style={{ fontFamily: "var(--display)", fontSize: 34, fontWeight: 700, color: THEME.grayLight, lineHeight: 1.05, marginTop: 14 }}>{state.user.name}</div>
-        <div style={{ color: THEME.textDim, fontWeight: 500, marginTop: 2, fontSize: 15 }}>{state.user.city}</div>
+        <div style={{ color: THEME.textDim, fontWeight: 500, marginTop: 2, fontSize: 15 }}>
+          {myHandle ? `@${myHandle} · ${state.user.city}` : state.user.city}
+        </div>
         {state.user.bio && <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 8, lineHeight: 1.45 }}>{state.user.bio}</div>}
 
         <KarmaBadge karma={karma} />

@@ -1,6 +1,6 @@
 // Extracted from App.js.
 import { Award, Flag, Mountain, Sparkles, TrendingUp } from "lucide-react";
-import { THEME, SEED_HIKES, COMMUNITY_TOP } from "../constants";
+import { THEME, SEED_HIKES, USER_BY_HANDLE } from "../constants";
 import { API_ORIGIN } from "./api";
 
 /* ---------------- helpers ---------------- */
@@ -70,8 +70,30 @@ export function aggregate(state, hikeId) {
   const hikers = new Set(all.map((e) => e.handle)).size;
   return { avg: all.reduce((a, e) => a + e.rating, 0) / all.length, count: all.length, hikers };
 }
-export function rankedBy(hikeId) {
-  return Object.entries(COMMUNITY_TOP)
+/* A stable palette index for a handle with no persona record, so the same
+   account always draws the same generated avatar instead of shifting colour
+   between screens. */
+export function hueForHandle(handle) {
+  let h = 0;
+  for (let i = 0; i < (handle || "").length; i += 1) h = (h * 31 + handle.charCodeAt(i)) | 0;
+  return Math.abs(h) % POSTER_PALETTES.length;
+}
+
+/* Whoever a handle belongs to, in the shape the UI expects.
+   USER_BY_HANDLE only holds the five seed personas, but community data is
+   backed by real accounts now — so any handle can turn up in a feed, on a
+   shelf or on a trail page. Reading the constant directly crashed on
+   `undefined.hue`; this falls back to showing the handle as the name.
+   city/bio come back empty because the users table doesn't store them. */
+export function userForHandle(handle) {
+  return USER_BY_HANDLE[handle] || { handle, name: handle, city: "", bio: "", hue: hueForHandle(handle) };
+}
+
+/* Who else ranks this hike, and where. Reads state.communityTop (backed by
+   /api/community/top), which leaves out your own shelf — a trail page renders
+   your rank from state.top in its own card. */
+export function rankedBy(state, hikeId) {
+  return Object.entries(state.communityTop || {})
     .map(([handle, list]) => ({ handle, rank: list.indexOf(hikeId) + 1 }))
     .filter((x) => x.rank > 0)
     .sort((a, b) => a.rank - b.rank);

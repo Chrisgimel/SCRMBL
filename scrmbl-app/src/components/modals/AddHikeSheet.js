@@ -14,7 +14,7 @@ import { spotlightHike, totalKarmaForLogs, karmaLevel } from "../../utils/karma"
 
 /* Many entries per hike, photos, the gear you wore, and real stats
    on custom routes. (plan 1.2 / 1.4 / 3.2 / 3.3) */
-function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast, onLogged, saveLog, saveCustomHike }) {
+function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast, onLogged, saveLog, saveCustomHike, setTop }) {
   const editing = editLogId ? state.logs.find((l) => l.id === editLogId) : null;
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState(() => {
@@ -68,14 +68,17 @@ function AddHikeSheet({ state, setState, onClose, presetHikeId, editLogId, toast
       const after = karmaLevel(totalKarmaForLogs([...state.logs, entry], state, spotlightId));
       if (after.level > before.level) leveledUpTo = after;
     }
-    /* The entry itself goes through the hook (optimistic write, photo
-       upload, backend sync); top and bucket stay local state. */
+    /* The entry and the shelf each go through their own hook (optimistic
+       write, backend sync); bucket stays local state. The next shelf order is
+       computed from state.top rather than inside a setState updater, which
+       isn't guaranteed to have run by the time setTop's API call needs it. */
     saveLog(entry);
-    setState((s) => {
-      let top = s.top.filter((id) => id !== picked.id);
-      if (pinTop) top = [...s.top.filter((id) => id !== picked.id), picked.id].slice(0, TOP_CAP);
-      return { ...s, top, bucket: s.bucket.filter((b) => b !== picked.id) };
-    });
+
+    const without = state.top.filter((id) => id !== picked.id);
+    const nextTop = pinTop ? [...without, picked.id].slice(0, TOP_CAP) : without;
+    if (nextTop.length !== state.top.length || pinTop) setTop(nextTop);
+
+    setState((s) => ({ ...s, bucket: s.bucket.filter((b) => b !== picked.id) }));
     onClose();
     if (editing) toast("Entry updated");
     else onLogged({ hike: picked, wasOnBucket, firstEver, rating, entry, leveledUpTo });

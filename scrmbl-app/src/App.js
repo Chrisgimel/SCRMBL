@@ -4,6 +4,7 @@ import { useBucklist } from "./hooks/useBucklist";
 import { useLikes } from "./hooks/useLikes";
 import { useGear } from "./hooks/useGear";
 import { useLogs } from "./hooks/useLogs";
+import { useTop } from "./hooks/useTop";
 import * as api from "./utils/api";
 import Logo from "./components/ui/Logo";
 
@@ -75,6 +76,9 @@ export default function App() {
   // Backend-synced logs + custom hikes
   const { saveLog, removeLog, saveCustomHike } = useLogs(state.signedIn, state.logs, state.customHikes, state.isDemo, setState);
 
+  // Backend-synced Top Hikes shelf
+  const { setTop } = useTop(state.signedIn, state.top, state.isDemo, setState);
+
   // Sync bucklist from hook to state for existing components
   useEffect(() => {
     if (state.signedIn) {
@@ -82,11 +86,15 @@ export default function App() {
     }
   }, [bucklist, state.signedIn]);
 
-  /* Other hikers' entries, which the feed, Discover's trending math, trail
-     pages and profiles all read. Public and unauthenticated, so it loads at
-     startup rather than on sign-in — and again on sign-in, since the endpoint
-     leaves out your own entries (the client already has those in state.logs)
-     and which ones those are depends on who you are. */
+  /* Other hikers' entries and ranked shelves, which the feed, Discover's
+     trending math, trail pages and profiles all read. Public and
+     unauthenticated, so they load at startup rather than on sign-in — and
+     again on sign-in, since both endpoints leave out your own rows (the
+     client already has those in state.logs / state.top) and which rows those
+     are depends on who you are.
+
+     The two are fetched independently on purpose: one failing shouldn't blank
+     the other. */
   useEffect(() => {
     let cancelled = false;
 
@@ -96,6 +104,13 @@ export default function App() {
         setState(s => ({ ...s, communityLogs: logs, communityHikes: customHikes }));
       })
       .catch(err => console.error('Failed to load community logs:', err));
+
+    api.getCommunityTop()
+      .then(({ top }) => {
+        if (cancelled) return;
+        setState(s => ({ ...s, communityTop: top }));
+      })
+      .catch(err => console.error('Failed to load community top hikes:', err));
 
     return () => { cancelled = true; };
   }, [state.signedIn]);
@@ -222,7 +237,7 @@ export default function App() {
                     openThread={openThread} openInbox={openInbox} openUser={openUser} sellDraft={sellDraft}
                     clearSellDraft={() => setSellDraft(null)} toast={toast} />}
                   {tab === "profile" && <ProfileScreen state={state} setState={setState} openHike={openHike}
-                    removeLog={removeLog}
+                    removeLog={removeLog} setTop={setTop}
                     openUser={openUser} openSettings={() => setSettings(true)} onLog={openLog}
                     toggleBucklist={toggleBucklist} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} toast={toast}
                     openBucketlistBrowser={() => setBrowsingBucketlist(true)} />}
@@ -282,7 +297,7 @@ export default function App() {
         )}
         {adding && (
           <AddHikeSheet state={state} setState={setState} presetHikeId={adding.hikeId} editLogId={adding.logId}
-            saveLog={saveLog} saveCustomHike={saveCustomHike}
+            saveLog={saveLog} saveCustomHike={saveCustomHike} setTop={setTop}
             toast={toast} onLogged={(r) => { setLogged(r); if (r.leveledUpTo) announceLevelUp(r.leveledUpTo); }} onClose={() => setAdding(null)} />
         )}
         {logged && (

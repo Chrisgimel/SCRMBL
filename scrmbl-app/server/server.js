@@ -553,6 +553,28 @@ app.delete('/api/kits/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Minimal public profile for a handle, so a real account — not just one of
+// the five seed personas the frontend hardcodes — can be opened from a feed,
+// a shelf or a trail page. Name and handle only: email is never exposed here,
+// and the users table holds no city/bio/avatar to give out.
+app.get('/api/users/:handle', async (req, res) => {
+  try {
+    const user = await getQuery(
+      'SELECT handle, name FROM users WHERE LOWER(handle) = LOWER(?)',
+      [req.params.handle]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ handle: user.handle, name: user.name });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
 // Get a user's gear by handle (read-only public endpoint)
 app.get('/api/users/:handle/gear', async (req, res) => {
   try {
@@ -876,6 +898,95 @@ app.get('/api/users/:handle/logs', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user logs:', error);
     res.status(500).json({ error: 'Failed to fetch user logs' });
+  }
+});
+
+// ============================================
+// TOP HIKES ROUTES
+// ============================================
+
+// Your ranked shelf, in rank order.
+app.get('/api/top', requireAuth, async (req, res) => {
+  try {
+    const rows = await allQuery(
+      'SELECT hike_id FROM top_hikes WHERE user_id = ? ORDER BY position ASC',
+      [req.session.userId]
+    );
+    res.json(rows.map((row) => row.hike_id));
+  } catch (error) {
+    console.error('Error fetching top hikes:', error);
+    res.status(500).json({ error: 'Failed to fetch top hikes' });
+  }
+});
+
+// Replace your ranked shelf wholesale. Every write is a reorder or a
+// removal that shifts most positions anyway, so diffing rows would be more
+// code for the same result. Wrapped in a transaction because a crash between
+// the delete and the inserts would otherwise silently truncate the shelf.
+app.put('/api/top', requireAuth, async (req, res) => {
+  const { top } = req.body;
+
+  if (!Array.isArray(top)) {
+    return res.status(400).json({ error: 'top must be an array of hike ids' });
+  }
+
+  // Duplicates would violate UNIQUE(user_id, hike_id) partway through and
+  // roll back a legitimate-looking request, so collapse them up front. The
+  // first occurrence wins, since that is the better rank.
+  const ordered = [...new Set(top.filter((id) => typeof id === 'string' && id))];
+
+  try {
+    await runQuery('BEGIN TRANSACTION');
+    try {
+      await runQuery('DELETE FROM top_hikes WHERE user_id = ?', [req.session.userId]);
+
+      for (let i = 0; i < ordered.length; i += 1) {
+        await runQuery(
+          'INSERT INTO top_hikes (user_id, hike_id, position) VALUES (?, ?, ?)',
+          [req.session.userId, ordered[i], i]
+        );
+      }
+
+      await runQuery('COMMIT');
+    } catch (inner) {
+      await runQuery('ROLLBACK');
+      throw inner;
+    }
+
+    res.json(ordered);
+  } catch (error) {
+    console.error('Error saving top hikes:', error);
+    res.status(500).json({ error: 'Failed to save top hikes' });
+  }
+});
+
+// Everyone's ranked shelves, keyed by handle — this is what powers "ranked
+// by" on a hike page and the Top Hikes grid on a community profile. Public
+// and unauthenticated; it replaced the COMMUNITY_TOP constant.
+app.get('/api/community/top', async (req, res) => {
+  try {
+    // Your own shelf is excluded, same as /api/community/logs. A hike page
+    // renders your rank from state.top in its own card above the others
+    // (HikeScreen's myTop), so including you here would list you twice.
+    const viewerId = req.session.userId || null;
+
+    const rows = await allQuery(`
+      SELECT top_hikes.hike_id, top_hikes.position, users.handle AS handle
+      FROM top_hikes
+      JOIN users ON users.id = top_hikes.user_id
+      WHERE users.handle IS NOT NULL AND top_hikes.user_id IS NOT ?
+      ORDER BY users.handle ASC, top_hikes.position ASC
+    `, [viewerId]);
+
+    const top = {};
+    for (const row of rows) {
+      (top[row.handle] = top[row.handle] || []).push(row.hike_id);
+    }
+
+    res.json({ top });
+  } catch (error) {
+    console.error('Error fetching community top hikes:', error);
+    res.status(500).json({ error: 'Failed to fetch community top hikes' });
   }
 });
 
