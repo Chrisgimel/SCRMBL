@@ -59,6 +59,10 @@ export default function App() {
   const [reviewDetail, setReviewDetail] = useState(null);
   const [photoViewer, setPhotoViewer] = useState(null);
   const [toastMsg, setToastState] = useState(null);
+  // Callers pass either one photo src or a whole list plus a starting index;
+  // both normalize to the same { photos, index } shape the viewer expects.
+  const openPhotoViewer = (photos, index = 0) =>
+    setPhotoViewer({ photos: Array.isArray(photos) ? photos : [photos], index });
   const [levelUp, setLevelUp] = useState(null);
   const saveTimer = useRef(null);
   const toastTimer = useRef(null);
@@ -223,7 +227,7 @@ export default function App() {
               {top?.type === "hike" ? (
                 <HikeScreen state={state} setState={setState} hikeId={top.id} onBack={back}
                   onLog={(id) => openLog(id)} openUser={openUser} toast={toast} toggleBucklist={toggleBucklist}
-                  toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openPhotoViewer={setPhotoViewer} />
+                  toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openPhotoViewer={openPhotoViewer} />
               ) : top?.type === "user" ? (
                 <UserScreen state={state} setState={setState} handle={top.id} onBack={back} openHike={openHike}
                   toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} />
@@ -233,7 +237,7 @@ export default function App() {
                 <ThreadScreen state={state} setState={setState} threadId={top.id} onBack={back} openUser={openUser} />
               ) : (
                 <>
-                  {tab === "feed" && <FeedScreen state={state} setState={setState} openHike={openHike} openUser={openUser} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openReviewDetail={openReviewDetail} openPhotoViewer={setPhotoViewer} />}
+                  {tab === "feed" && <FeedScreen state={state} setState={setState} openHike={openHike} openUser={openUser} toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openReviewDetail={openReviewDetail} openPhotoViewer={openPhotoViewer} />}
                   {tab === "gear" && <GearScreen state={state} toast={toast}
                     saveGear={saveGear} removeGear={removeGear} toggleFeature={toggleFeature}
                     saveKit={saveKit} removeKit={removeKit}
@@ -315,10 +319,10 @@ export default function App() {
         )}
         {reviewDetail && (
           <ReviewDetailModal state={state} review={reviewDetail} onClose={() => setReviewDetail(null)} openHike={openHike}
-            toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openPhotoViewer={setPhotoViewer} />
+            toggleLike={toggleLike} isLiked={isLiked} getLikeCount={getLikeCount} openPhotoViewer={openPhotoViewer} />
         )}
         {photoViewer && (
-          <PhotoViewerModal photo={photoViewer} onClose={() => setPhotoViewer(null)} />
+          <PhotoViewerModal photos={photoViewer.photos} index={photoViewer.index} onClose={() => setPhotoViewer(null)} />
         )}
         <Toast toast={toastMsg} />
         <LevelUpBanner levelUp={levelUp} onDismiss={() => setLevelUp(null)} />

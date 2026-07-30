@@ -4,10 +4,14 @@ import { THEME } from "../constants";
 function GlobalStyles() {
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Public+Sans:wght@400;600;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Public+Sans:wght@400;600;700;800&family=Permanent+Marker&family=Caveat:wght@600;700&display=swap');
       :root {
         --display: 'Oswald', 'Arial Narrow', sans-serif;
         --body: 'Public Sans', -apple-system, 'Segoe UI', sans-serif;
+        /* Marker hand for polaroid captions. Caveat carries the smaller
+           secondary line, where Permanent Marker gets too dense to read. */
+        --hand: 'Permanent Marker', 'Bradley Hand', cursive;
+        --hand-light: 'Caveat', 'Bradley Hand', cursive;
       }
       * { box-sizing: border-box; }
       button { font-family: var(--body); }
@@ -47,7 +51,12 @@ function GlobalStyles() {
       .ghost-btn { background: transparent; border: none; color: ${THEME.sky}; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px; }
       .oauth-btn { width: 100%; border: none; border-radius: 24px; padding: 12px; background: #fff; color: #1a1a1a; font-weight: 600; font-size: 14.5px; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; }
       .icon-inline { position: absolute; right: 12px; top: 10px; background: transparent; border: none; color: ${THEME.gray}; cursor: pointer; }
-      .gear-slot { border: none; border-radius: 16px; aspect-ratio: 1.15; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px; transition: transform 0.1s; }
+      .gear-slot { border: none; border-radius: 16px; aspect-ratio: 1.15; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px; transition: transform 0.1s; min-width: 0; overflow: hidden; }
+      .slot-chip { display: inline-flex; align-items: center; gap: 4px; background: transparent; border: 1px dashed rgba(255,255,255,0.28); color: ${THEME.gray}; font-size: 11.5px; font-weight: 600; border-radius: 14px; padding: 6px 11px; cursor: pointer; }
+      .slot-chip:hover { border-color: rgba(255,255,255,0.5); color: ${THEME.grayLight}; }
+      .polaroid-btn { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; transition: transform 0.12s ease; }
+      .polaroid-btn:active { transform: scale(0.96); }
+      .polaroid-btn:hover { transform: translateY(-2px); }
       .gear-slot:active { transform: scale(0.96); }
       .gear-tag { display: inline-flex; align-items: center; gap: 4px; background: ${THEME.slateDeep}; color: ${THEME.mintLight}; font-size: 9.5px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; border-radius: 8px; padding: 3px 8px; }
       .hit { position: absolute; top: 0; width: 50%; height: 100%; background: transparent; border: none; padding: 0; cursor: pointer; }

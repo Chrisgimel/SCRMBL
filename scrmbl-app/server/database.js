@@ -125,6 +125,14 @@ function initializeDatabase() {
       }
     });
 
+    // Migration: `image` holds the background-removed cutout URL for the
+    // flat-lay Loadout view. Same idempotent-ALTER idiom as gear.source.
+    db.run('ALTER TABLE gear ADD COLUMN image TEXT', (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error('Error adding gear.image column:', err);
+      }
+    });
+
     // Kits table — gear_ids is JSON-encoded array of gear.id values
     db.run(`
       CREATE TABLE IF NOT EXISTS kits (

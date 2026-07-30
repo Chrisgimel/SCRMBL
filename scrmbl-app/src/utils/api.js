@@ -184,6 +184,15 @@ export async function uploadPhoto(dataUrl) {
   });
 }
 
+// Same contract as uploadPhoto, but the server runs background removal
+// first — used for gear photos on the flat-lay Loadout view.
+export async function uploadGearCutout(dataUrl) {
+  return apiCall('/gear/cutout', {
+    method: 'POST',
+    body: JSON.stringify({ dataUrl }),
+  });
+}
+
 // ============================================
 // LOGS API
 // ============================================

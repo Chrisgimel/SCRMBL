@@ -9,9 +9,10 @@ import Rating from "../components/ui/Rating";
 import ReviewCard from "../components/hike/ReviewCard";
 import RareBadge from "../components/ui/RareBadge";
 import KarmaBadge from "../components/ui/KarmaBadge";
+import ParkStamp from "../components/ui/ParkStamp";
 import { UI } from "../assets/images";
 import { THEME, TOP_CAP, USER_BY_HANDLE } from "../constants";
-import { achievements, allHikes, fmtStats, hikeById, isRareHike, userAchievements } from "../utils/helpers";
+import { achievements, allHikes, fmtStats, hikeById, isRareHike, parkStamps, userAchievements } from "../utils/helpers";
 import { spotlightHike, totalKarma } from "../utils/karma";
 
 function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLog, toggleBucklist, toast, toggleLike, isLiked, getLikeCount, openBucketlistBrowser, removeLog, setTop }) {
@@ -28,6 +29,7 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
     .filter((a) => a.unlocked)
     .map((a) => ({ id: a.id, icon: a.icon, label: a.title, note: `+${a.karmaValue || 0} karma` })), [state]);
   const allBadges = [...stats.badges, ...achievementBadges];
+  const stamps = useMemo(() => parkStamps(state), [state]);
 
   /* The shelf syncs to the backend now, so the next order is computed from
      state.top and handed to setTop — never derived inside a setState updater,
@@ -117,6 +119,17 @@ function ProfileScreen({ state, setState, openHike, openSettings, openUser, onLo
             </div>
           )}
         </div>
+
+        {stamps.length > 0 && (
+          <div style={{ margin: "16px 0 4px" }}>
+            <div style={{ fontFamily: "var(--hand)", fontSize: 15, color: THEME.grayLight, marginBottom: 10, paddingLeft: 2 }}>
+              Passport
+            </div>
+            <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 4, marginRight: -18 }}>
+              {stamps.map((s) => <ParkStamp key={s.park} park={s.park} unlocked={s.unlocked} />)}
+            </div>
+          </div>
+        )}
 
         {!state.premium && (
           <div style={{ margin: "14px 0 4px" }}>

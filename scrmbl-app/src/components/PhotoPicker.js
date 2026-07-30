@@ -5,7 +5,7 @@ import exifr from "exifr";
 import { THEME } from "../constants";
 import { photoSrc } from "../utils/helpers";
 
-function fileToThumb(file, max = 900) {
+export function fileToThumb(file, max = 900) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("read failed"));

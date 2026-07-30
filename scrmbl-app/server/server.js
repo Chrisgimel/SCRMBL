@@ -7,6 +7,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const { initializeDatabase, runQuery, getQuery, allQuery, slugifyHandle, uniqueHandle } = require('./database');
 const { matchTrail } = require('./trailMatcher');
+const { removeBackground } = require('@imgly/background-removal-node');
 
 const app = express();
 const PORT = 3001;
@@ -429,15 +430,15 @@ app.get('/api/gear', requireAuth, async (req, res) => {
 // Add a gear item
 app.post('/api/gear', requireAuth, async (req, res) => {
   try {
-    const { slot, name, brand, price, source, url, featured } = req.body;
+    const { slot, name, brand, price, source, url, featured, image } = req.body;
 
     if (!slot || !name) {
       return res.status(400).json({ error: 'slot and name are required' });
     }
 
     const result = await runQuery(
-      'INSERT INTO gear (user_id, slot, name, brand, price, source, url, featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [req.session.userId, slot, name, brand || null, price || null, source || null, url || null, featured ? 1 : 0]
+      'INSERT INTO gear (user_id, slot, name, brand, price, source, url, featured, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.session.userId, slot, name, brand || null, price || null, source || null, url || null, featured ? 1 : 0, image || null]
     );
 
     const newItem = await getQuery('SELECT * FROM gear WHERE id = ?', [result.id]);
@@ -452,7 +453,7 @@ app.post('/api/gear', requireAuth, async (req, res) => {
 app.put('/api/gear/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { slot, name, brand, price, source, url, featured } = req.body;
+    const { slot, name, brand, price, source, url, featured, image } = req.body;
 
     const existing = await getQuery(
       'SELECT * FROM gear WHERE id = ? AND user_id = ?',
@@ -463,7 +464,7 @@ app.put('/api/gear/:id', requireAuth, async (req, res) => {
     }
 
     await runQuery(
-      'UPDATE gear SET slot = ?, name = ?, brand = ?, price = ?, source = ?, url = ?, featured = ? WHERE id = ? AND user_id = ?',
+      'UPDATE gear SET slot = ?, name = ?, brand = ?, price = ?, source = ?, url = ?, featured = ?, image = ? WHERE id = ? AND user_id = ?',
       [
         slot !== undefined ? slot : existing.slot,
         name !== undefined ? name : existing.name,
@@ -472,6 +473,7 @@ app.put('/api/gear/:id', requireAuth, async (req, res) => {
         source !== undefined ? source : existing.source,
         url !== undefined ? url : existing.url,
         featured !== undefined ? (featured ? 1 : 0) : existing.featured,
+        image !== undefined ? image : existing.image,
         id,
         req.session.userId
       ]
@@ -715,6 +717,48 @@ app.post('/api/photos', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error uploading photo:', error);
     res.status(500).json({ error: 'Failed to upload photo' });
+  }
+});
+
+// Same contract as /api/photos, but runs the image through background
+// removal first and always writes a .png (needs alpha, regardless of what
+// the source type was). Used for gear photos on the flat-lay Loadout view.
+app.post('/api/gear/cutout', requireAuth, async (req, res) => {
+  try {
+    const { dataUrl } = req.body;
+
+    if (typeof dataUrl !== 'string') {
+      return res.status(400).json({ error: 'dataUrl is required' });
+    }
+
+    // Already a processed cutout (or unchanged on re-save)? Nothing to do.
+    if (!dataUrl.startsWith('data:')) {
+      return res.json({ url: dataUrl });
+    }
+
+    const match = /^data:([^;,]+);base64,(.+)$/s.exec(dataUrl);
+    if (!match) {
+      return res.status(400).json({ error: 'Malformed data URI' });
+    }
+
+    if (!PHOTO_TYPES[match[1].toLowerCase()]) {
+      return res.status(415).json({ error: `Unsupported image type: ${match[1]}` });
+    }
+
+    const buffer = Buffer.from(match[2], 'base64');
+    // removeBackground infers the source format from Blob.type — a bare
+    // Buffer decodes as "Unsupported format" since it carries no MIME type.
+    const inputBlob = new Blob([buffer], { type: match[1] });
+    const outputBlob = await removeBackground(inputBlob);
+    const cutoutBuffer = Buffer.from(await outputBlob.arrayBuffer());
+
+    const filename = `${crypto.randomUUID()}.png`;
+    await fs.promises.writeFile(path.join(UPLOADS_DIR, filename), cutoutBuffer);
+
+    res.json({ url: `/uploads/${filename}` });
+  } catch (error) {
+    console.error('Error processing gear cutout:', error);
+    res.status(500).json({ error: 'Failed to process image' });
   }
 });
 

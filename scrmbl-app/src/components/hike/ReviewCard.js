@@ -4,6 +4,7 @@ import Avatar from "../ui/Avatar";
 import Rating from "../ui/Rating";
 import RareChip from "../ui/RareChip";
 import AchievementBadge from "../ui/AchievementBadge";
+import Polaroid, { tiltFor } from "../ui/Polaroid";
 
 import { EFFORT_LABEL, THEME } from "../../constants";
 import { fmtDate, hasAltitudeBadge, hasDistanceBadge, isRareHike, photoSrc, userForHandle } from "../../utils/helpers";
@@ -66,10 +67,12 @@ function ReviewCard({ state, setState, entry, openUser, hikeName, hike, toggleLi
       )}
       {entry.review && <div style={{ color: THEME.creamGreen, fontSize: 13.5, marginTop: 6, lineHeight: 1.45 }}>{entry.review}</div>}
       {entry.photos?.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        <div style={{ display: "flex", gap: 4, marginTop: 12, marginBottom: 4, paddingLeft: 4, flexWrap: "wrap", rowGap: 10 }}>
           {entry.photos.map((p, i) => (
-            <button key={i} onClick={() => openPhotoViewer?.(photoSrc(p))} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, overflow: "hidden" }} aria-label="View larger">
-              <img src={photoSrc(p)} alt="" style={{ width: 62, height: 62, borderRadius: 8, objectFit: "cover" }} />
+            <button key={i} className="polaroid-btn"
+              onClick={() => openPhotoViewer?.(entry.photos.map(photoSrc), i)}
+              aria-label={`View photo ${i + 1} of ${entry.photos.length}`}>
+              <Polaroid src={photoSrc(p)} width={78} rotate={tiltFor(i)} fit="cover" />
             </button>
           ))}
         </div>

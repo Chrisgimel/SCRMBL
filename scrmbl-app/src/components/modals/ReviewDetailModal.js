@@ -4,6 +4,7 @@ import Sheet from "./Sheet";
 import Avatar from "../ui/Avatar";
 import Rating from "../ui/Rating";
 import AchievementBadge from "../ui/AchievementBadge";
+import Polaroid, { tiltFor } from "../ui/Polaroid";
 import { THEME, USER_BY_HANDLE, EFFORT_LABEL } from "../../constants";
 import { fmtDate, hikeById, hasDistanceBadge, hasAltitudeBadge, photoSrc } from "../../utils/helpers";
 
@@ -75,10 +76,12 @@ function ReviewDetailModal({ state, review, onClose, openHike, toggleLike, isLik
       )}
 
       {review.photos?.length > 0 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 5, marginTop: 4, marginBottom: 18, paddingLeft: 4, flexWrap: "wrap", rowGap: 12 }}>
           {review.photos.map((p, i) => (
-            <button key={i} onClick={() => openPhotoViewer(photoSrc(p))} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: 10, overflow: "hidden" }} aria-label="View larger">
-              <img src={photoSrc(p)} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover" }} />
+            <button key={i} className="polaroid-btn"
+              onClick={() => openPhotoViewer(review.photos.map(photoSrc), i)}
+              aria-label={`View photo ${i + 1} of ${review.photos.length}`}>
+              <Polaroid src={photoSrc(p)} width={92} rotate={tiltFor(i)} fit="cover" />
             </button>
           ))}
         </div>

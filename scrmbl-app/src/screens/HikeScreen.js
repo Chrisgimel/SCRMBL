@@ -8,6 +8,7 @@ import ReviewCard from "../components/hike/ReviewCard";
 import UnderlineTabs from "../components/ui/UnderlineTabs";
 import Avatar from "../components/ui/Avatar";
 import AchievementBadge from "../components/ui/AchievementBadge";
+import Polaroid, { tiltFor } from "../components/ui/Polaroid";
 import AddPoiSheet from "../components/modals/AddPoiSheet";
 import PoiDetailSheet from "../components/modals/PoiDetailSheet";
 import PoiSectionsSheet from "../components/modals/PoiSectionsSheet";
@@ -34,9 +35,11 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
   const myEntries = state.logs.filter((l) => l.hikeId === hikeId);
   const myTop = state.top.indexOf(hikeId);
 
+  // `entries` (unlike myEntries) already merges community logs in via
+  // entriesFor, so the Photos tab is a shared wall rather than just your own.
   const photos = [
-    ...myEntries.flatMap((l) => l.photos.map((p) => ({ src: photoSrc(p), handle: "you" }))),
-    ...(ASSETS.hikeImages[hikeId] ? [{ src: ASSETS.hikeImages[hikeId], handle: null }] : []),
+    ...entries.flatMap((e) => (e.photos || []).map((p) => ({ src: photoSrc(p), handle: e.handle, mine: e.mine }))),
+    ...(ASSETS.hikeImages[hikeId] ? [{ src: ASSETS.hikeImages[hikeId], handle: null, mine: false }] : []),
   ];
 
   /* Geotagged photo pins for the Map tab — only photos with EXIF GPS
@@ -166,12 +169,15 @@ function HikeScreen({ state, setState, hikeId, onBack, onLog, openUser, toast, t
         {tab === "Photos" && (
           photos.length === 0
             ? <Empty icon={Camera} title="No photos yet" subtitle="Add one to your entry and it shows up here." />
-            : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            : <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: 8, rowGap: 20, padding: "8px 4px 4px" }}>
                 {photos.map((p, i) => (
-                  <div key={i} style={{ aspectRatio: "1", borderRadius: 10, overflow: "hidden", position: "relative" }}>
-                    <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    {p.handle === "you" && <div className="photo-tag">Yours</div>}
-                  </div>
+                  <button key={i} className="polaroid-btn"
+                    onClick={() => openPhotoViewer?.(photos.map((x) => x.src), i)}
+                    aria-label={`View photo ${i + 1} of ${photos.length}`}
+                    style={{ position: "relative", marginTop: i % 2 ? 16 : 0 }}>
+                    <Polaroid src={p.src} width={150} rotate={tiltFor(i)} fit="cover"
+                      caption={p.mine ? "Yours" : (p.handle ? userForHandle(p.handle).name : undefined)} />
+                  </button>
                 ))}
               </div>
         )}

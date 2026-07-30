@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
-import { LinkIcon, Trash2 } from "lucide-react";
+import React, { useState, useMemo, useRef } from "react";
+import { LinkIcon, Trash2, Camera, X } from "lucide-react";
 import Sheet from "../modals/Sheet";
 import Chip from "../ui/Chip";
 import { THEME, GEAR_SLOTS, GEAR_SOURCES, SLOT } from "../../constants";
-import { uid } from "../../utils/helpers";
+import { uid, photoSrc } from "../../utils/helpers";
 import { readProductLink } from "../../utils/retailers";
+import { fileToThumb } from "../PhotoPicker";
+import { uploadGearCutout } from "../../utils/api";
 
 function GearModal({ item, onClose, onSave, onRemove }) {
   const [name, setName] = useState(item.name || "");
@@ -13,23 +15,85 @@ function GearModal({ item, onClose, onSave, onRemove }) {
   const [source, setSource] = useState(item.source || "REI");
   const [slot, setSlot] = useState(item.slot || "other");
   const [url, setUrl] = useState(item.url || "");
+  const [newPhoto, setNewPhoto] = useState(null); // raw data URL picked, not yet processed
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const photoInput = useRef(null);
   const link = useMemo(() => readProductLink(url), [url]);
-  const dirty = name !== (item.name || "") || brand !== (item.brand || "") || url !== (item.url || "");
+  const dirty = name !== (item.name || "") || brand !== (item.brand || "") || url !== (item.url || "")
+    || !!newPhoto || photoRemoved;
+
+  const pickPhoto = async (files) => {
+    const file = files?.[0];
+    if (!file) return;
+    try {
+      setNewPhoto(await fileToThumb(file));
+      setPhotoRemoved(false);
+    } catch { /* unreadable file — leave the existing/empty photo alone */ }
+  };
+
+  const save = async () => {
+    let image = photoRemoved ? null : (item.image ?? null);
+    if (newPhoto) {
+      setUploading(true);
+      try {
+        const { url: cutoutUrl } = await uploadGearCutout(newPhoto);
+        image = cutoutUrl;
+      } catch {
+        // Background removal failed — save the rest of the item rather than
+        // blocking on a photo problem; item keeps whatever image it had.
+      } finally {
+        setUploading(false);
+      }
+    }
+    onSave({
+      id: item.id || uid("g"), slot, name: name.trim(), brand: brand.trim(),
+      price, source, url: url.trim(), featured: item.featured ?? SLOT[slot].worn, image,
+    });
+  };
+
+  const preview = newPhoto || (!photoRemoved && item.image ? photoSrc(item.image) : null);
 
   return (
     <Sheet title={item.id ? "Edit gear" : "Add gear"} onClose={onClose} dirty={dirty}
       footer={
         <div style={{ display: "flex", gap: 10 }}>
           {onRemove && <button className="outline-btn" style={{ flex: 1 }} onClick={onRemove}><Trash2 size={15} style={{ verticalAlign: -2 }} /> Remove</button>}
-          <button className="primary-btn" style={{ flex: 2 }} disabled={!name.trim()}
-            onClick={() => onSave({
-              id: item.id || uid("g"), slot, name: name.trim(), brand: brand.trim(),
-              price, source, url: url.trim(), featured: item.featured ?? SLOT[slot].worn,
-            })}>
-            Save to locker
+          <button className="primary-btn" style={{ flex: 2 }} disabled={!name.trim() || uploading}
+            onClick={save}>
+            {uploading ? "Removing background…" : "Save to locker"}
           </button>
         </div>
       }>
+      <label className="field-label">Photo</label>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: 10, background: THEME.sageDeep,
+          display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0,
+        }}>
+          {preview ? (
+            <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          ) : (
+            <Camera size={20} color={THEME.gray} />
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <button type="button" className="tiny-btn" onClick={() => photoInput.current?.click()}>
+            {preview ? "Change photo" : "Add photo"}
+          </button>
+          {preview && (
+            <button type="button" className="tiny-btn" onClick={() => { setNewPhoto(null); setPhotoRemoved(true); }}>
+              <X size={10} style={{ verticalAlign: -1 }} /> Remove
+            </button>
+          )}
+        </div>
+        <input ref={photoInput} type="file" accept="image/*" hidden
+          onChange={(e) => { pickPhoto(e.target.files); e.target.value = ""; }} />
+      </div>
+      <div style={{ color: THEME.gray, fontSize: 11.5, marginTop: -6, marginBottom: 14, lineHeight: 1.45 }}>
+        Background removed automatically — shows up on your Loadout flat-lay in a few seconds.
+      </div>
+
       <label className="field-label" htmlFor="g-name">Item name</label>
       <input id="g-name" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Beta AR Jacket" />
       <label className="field-label" htmlFor="g-brand">Brand</label>

@@ -2,10 +2,29 @@ import React, { useState } from "react";
 import { Plus, Tag, Package, Layers } from "lucide-react";
 import UnderlineTabs from "../components/ui/UnderlineTabs";
 import Empty from "../components/ui/Empty";
-import { ASSETS, COPY, GEAR_SLOTS, SLOT, THEME, WORN_SLOTS } from "../constants";
+import { COPY, GEAR_SLOTS, SLOT, THEME, WORN_SLOTS } from "../constants";
 import { readProductLink } from "../utils/retailers";
+import { photoSrc } from "../utils/helpers";
+import { GEAR_SLOT_ICONS } from "../assets/gearIcons";
+import Polaroid from "../components/ui/Polaroid";
 import GearModal from "../components/gear/GearModal";
 import KitModal from "../components/gear/KitModal";
+
+// Deterministic per-item tilt so the scatter reads as photos dropped on a
+// table rather than a rigid grid, without jittering between re-renders.
+// Keyed on the slot id (not the gear id) so a tile keeps its angle when the
+// item in it changes.
+function rotationFor(id) {
+  const s = String(id);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000;
+  return ((h % 9) - 4) * 1.1; // about -4.4..4.4 degrees
+}
+
+// Polaroids sit in a 2-up flow at a fixed pixel width — never a percentage —
+// so a large source image can't feed back into layout the way it did when
+// these were auto-sized grid cells.
+const POLAROID_W = 148;
 
 function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature, saveKit, removeKit }) {
   const [tab, setTab] = useState("Loadout");
@@ -13,6 +32,15 @@ function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature,
   const [editingKit, setEditingKit] = useState(null);
   const featured = state.gear.filter((g) => g.featured && SLOT[g.slot]?.worn);
   const total = state.gear.reduce((a, g) => a + (Number(g.price) || 0), 0);
+  // Worn slots split into the ones with something in them (rendered as
+  // polaroids) and the ones still empty (rendered as compact add-chips).
+  const wornSlotItems = WORN_SLOTS.map((s) => {
+    const items = state.gear.filter((g) => g.slot === s.id);
+    const shown = items.find((g) => g.featured) || items[0];
+    return { s, shown, extra: items.length > 1 ? ` +${items.length - 1}` : "" };
+  });
+  const worn = wornSlotItems.filter((x) => x.shown);
+  const emptySlots = wornSlotItems.filter((x) => !x.shown).map((x) => x.s);
   const usedIn = (id) => state.logs.filter((l) => (l.gear || []).includes(id)).length;
   const kits = state.kits || [];
 
@@ -50,37 +78,49 @@ function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature,
 
       {tab === "Loadout" && (
         <>
-          <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 2px" }}>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, maxWidth: "100%" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                {ASSETS.mannequin ? (
-                  <img src={ASSETS.mannequin} alt="" style={{ height: 210, maxWidth: "100%", filter: featured.length ? "none" : "brightness(0.85)" }} />
-                ) : (
-                  <svg viewBox="0 0 120 190" width="150" aria-hidden="true">
-                    <ellipse cx="60" cy="176" rx="42" ry="12" fill="rgba(0,0,0,0.25)" />
-                    <g fill={featured.length ? THEME.sageDeep : "#1c1c1e"}>
-                      <ellipse cx="60" cy="22" rx="13" ry="16" />
-                      <path d="M44 46 Q60 40 76 46 L74 96 Q60 102 46 96 Z" />
-                      <rect x="47" y="98" width="11" height="60" rx="5" />
-                      <rect x="62" y="98" width="11" height="60" rx="5" />
-                    </g>
-                  </svg>
-                )}
-                <div style={{ width: 130, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.28)", marginTop: -10 }} />
-              </div>
-              {featured.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
-                  {featured.map((g) => (
-                    <span key={g.id} className="gear-tag" style={{ maxWidth: 108, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {SLOT[g.slot].label}
-                    </span>
-                  ))}
-                </div>
-              )}
+          {/* Only kitted slots get a polaroid — five empty white frames would
+              drown out the two real ones. Unfilled slots drop to add-chips. */}
+          {worn.length > 0 && (
+            <div style={{
+              display: "flex", flexWrap: "wrap", justifyContent: "center",
+              columnGap: 6, rowGap: 18, padding: "22px 16px 6px",
+            }}>
+              {worn.map(({ s, shown, extra }, i) => (
+                <button key={s.id} onClick={() => setEditing(shown)}
+                  className="polaroid-btn"
+                  aria-label={`${s.label}: ${shown.name}`}
+                  style={{ marginTop: i % 2 ? 16 : 0 }}>
+                  <Polaroid
+                    width={POLAROID_W}
+                    rotate={rotationFor(s.id)}
+                    fit="contain"
+                    src={shown.image ? photoSrc(shown.image) : null}
+                    alt={shown.name}
+                    caption={shown.name + extra}
+                    sub={s.label}
+                  >
+                    <div style={{ color: "#C2C7BE" }}>{GEAR_SLOT_ICONS[s.id]}</div>
+                  </Polaroid>
+                </button>
+              ))}
             </div>
-          </div>
+          )}
 
-          <div style={{ margin: "6px 24px", background: THEME.sageDeep, borderRadius: 18, padding: "14px 18px", textAlign: "center", color: THEME.grayLight }}>
+          {emptySlots.length > 0 && (
+            <div style={{
+              display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 7,
+              padding: worn.length ? "14px 20px 2px" : "22px 20px 2px",
+            }}>
+              {emptySlots.map((s) => (
+                <button key={s.id} className="slot-chip" onClick={() => setEditing({ slot: s.id })}
+                  aria-label={`Add ${s.label}`}>
+                  <Plus size={12} strokeWidth={3} /> {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div style={{ margin: "14px 24px 6px", background: THEME.sageDeep, borderRadius: 18, padding: "14px 18px", textAlign: "center", color: THEME.grayLight }}>
             {featured.length === 0 ? (
               <>
                 <div style={{ fontWeight: 700, fontSize: 17 }}>{COPY.gearEmpty}</div>
@@ -92,30 +132,6 @@ function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature,
                 <div style={{ fontSize: 13, opacity: 0.85 }}>Locker value ~ ${total.toLocaleString()}</div>
               </>
             )}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "10px 22px 20px" }}>
-            {WORN_SLOTS.map((s) => {
-              const items = state.gear.filter((g) => g.slot === s.id);
-              const shown = items.find((g) => g.featured) || items[0];
-              return (
-                <button key={s.id} onClick={() => setEditing(shown || { slot: s.id })}
-                  className="gear-slot" style={{ background: shown ? THEME.slateDeep : THEME.sageDeep }}>
-                  {shown ? (
-                    <>
-                      <div style={{ fontSize: 10, color: THEME.mintLight, letterSpacing: 0.5, textTransform: "uppercase" }}>{s.label}</div>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: THEME.grayLight, lineHeight: 1.2, textAlign: "center" }}>{shown.name}</div>
-                      <div style={{ fontSize: 10.5, color: THEME.gray }}>{shown.brand}{items.length > 1 ? ` +${items.length - 1}` : ""}</div>
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={24} color={THEME.grayLight} strokeWidth={3} />
-                      <div style={{ fontSize: 10.5, color: THEME.grayLight, opacity: 0.75 }}>{s.label}</div>
-                    </>
-                  )}
-                </button>
-              );
-            })}
           </div>
         </>
       )}
@@ -137,6 +153,11 @@ function GearScreen({ state, onSell, toast, saveGear, removeGear, toggleFeature,
                     const n = usedIn(g.id);
                     return (
                       <div key={g.id} className="rank-card" style={{ alignItems: "flex-start" }}>
+                        {g.image && (
+                          <div style={{ width: 44, height: 44, borderRadius: 8, background: THEME.canvas, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                            <img src={photoSrc(g.image)} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                          </div>
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: THEME.grayLight, fontWeight: 700, fontSize: 14 }}>{g.name}</div>
                           <div style={{ color: THEME.gray, fontSize: 12 }}>

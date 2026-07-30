@@ -219,6 +219,22 @@ export const ACHIEVEMENTS = [
   }},
 ];
 
+/* Park stamps — a passport-style collectible, separate from the karma
+   achievements above (no karmaValue, purely visual for now). Same
+   catalog-only rule as everything else that hands out a reward
+   (see achievement-reward-integrity): `hike.park` is set once on the hike
+   itself, never typed per log entry, so there's nothing here for a logger to
+   inflate. Derived fresh every read, same as achievements() — no ledger to
+   desync. Only hikes genuinely inside a named park carry the field; most
+   trailheads sit on forest/wilderness land and are left unset on purpose. */
+export function parkStamps(state) {
+  const hikes = allHikes(state);
+  const byId = Object.fromEntries(hikes.map((h) => [h.id, h]));
+  const parks = [...new Set(hikes.map((h) => h.park).filter(Boolean))];
+  const visited = new Set(state.logs.map((l) => byId[l.hikeId]?.park).filter(Boolean));
+  return parks.map((park) => ({ park, unlocked: visited.has(park) }));
+}
+
 export function userAchievements(state, allHikes) {
   return ACHIEVEMENTS.map((ach) => ({
     ...ach,
