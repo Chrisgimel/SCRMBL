@@ -1,6 +1,6 @@
 <div align="center">
   <img src="SCRMBL_assets/logos/SCRMBLLogoFinal.png" alt="SCRMBL" width="280">
-  <p><em>A social hike log — think Letterboxd, but for trails.</em></p>
+  <p><em>A social hike log</em></p>
 </div>
 
 ---
