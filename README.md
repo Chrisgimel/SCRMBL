@@ -101,6 +101,12 @@ Working prototype, actively built. Auth, hike logging, gear, kits, the trail map
 
 I built this with heavy use of an AI coding assistant, and the commit history reflects that honestly via `Co-Authored-By` trailers. The architecture decisions, product design, and feature direction are mine; I'm happy to walk through any file in this repo and explain why it works the way it does.
 
+## License
+
+**Source-available for review — not open source.** You're welcome to read, download, and run this to evaluate my work. Copying, modifying, redistributing, or reusing it in another project isn't permitted without written permission. See [LICENSE](LICENSE) for the full terms.
+
+Trail geometry in `scrmbl-app/server/seedTrailGeometry.json` is derived from OpenStreetMap, © OpenStreetMap contributors, licensed under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — that data is not covered by the terms above. Map tiles are served at runtime by OpenTopoMap (CC BY-SA 3.0).
+
 ---
 
-<sub>Personal project by Chris. The trail geometry bundled in <code>seedTrailGeometry.json</code> is derived from OpenStreetMap data (ODbL).</sub>
+<sub>Personal project by Chris.</sub>
