@@ -30,7 +30,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(cookieParser());
 app.use(session({
-  secret: 'scrmbl-dev-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET || 'scrmbl-dev-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {

@@ -63,6 +63,21 @@ Thumbs.db
 .idea/
 
 # --- Claude Code local settings -----------------------------
-.claude/settings.local.json
-.claude/jobs/
-.claude/*.lock
+.claude/
+
+# --- Personal photos ----------------------------------------
+# Camera originals carry EXIF GPS + timestamps. They are kept on
+# disk for design work but must never be committed or published.
+# Only the derived, metadata-free art asset is tracked.
+SCRMBL_assets/photos/*
+!SCRMBL_assets/photos/TransparentPeakImage.png
+
+# --- Local working notes (machine paths, session handoffs) ---
+LATEST_ARCHIVE.txt
+BETA_TEST_FINDINGS.txt
+beta-test-*/
+scrmbl-app/NEXT_SESSION_PROMPT.txt
+scrmbl-app/REFACTOR_HANDOFF.txt
+scrmbl-app/_bt_harness.js
+SCRMBL_assets/documentation/SwitchAWSAccount.txt
+SCRMBL_assets/documentation/HowToOpenClaudeCodeAndStartWebsite.txt
